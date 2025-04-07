@@ -34,65 +34,51 @@ const legalCategories = [
     longDescription: 'Das Steuerrecht regelt die Erhebung von Steuern durch den Staat. Es beinhaltet Vorschriften zu verschiedenen Steuerarten wie Einkommensteuer, Umsatzsteuer, Gewerbesteuer und deren Berechnung, Erhebung und Rechtsmittel.',
     compatibleJurisdictions: ['BR', 'LR', 'EU'], // Alle Jurisdiktionen
   },
-  {
-    id: 4,
-    title: 'Familienrecht',
-    description: 'Entwicklungen im Familienrecht',
-    longDescription: 'Das Familienrecht regelt die rechtlichen Beziehungen zwischen Familienmitgliedern. Es umfasst Themen wie Ehe, Scheidung, Unterhalt, Sorgerecht, Adoption und die rechtliche Stellung von Kindern.',
-    compatibleJurisdictions: ['BR', 'LR'], // Bundesrecht und Landesrecht
-  },
-  {
-    id: 5,
-    title: 'Mietrecht',
-    description: 'Aktuelle Änderungen im Mietrecht',
-    longDescription: 'Das Mietrecht regelt die Rechtsbeziehungen zwischen Vermietern und Mietern. Es beinhaltet Vorschriften zu Mietverträgen, Mieterhöhungen, Kündigungen, Schönheitsreparaturen und Nebenkosten.',
-    compatibleJurisdictions: ['BR', 'LR'], // Bundesrecht und Landesrecht
-  },
   // Neue Rechtsbereiche
   {
-    id: 6,
+    id: 4,
     title: 'Verfassungsrecht',
     description: 'Entwicklungen im Verfassungsrecht',
     longDescription: 'Das Verfassungsrecht behandelt die grundlegende rechtliche Ordnung eines Staates. Es umfasst die Verfassung selbst sowie alle Rechtsnormen mit Verfassungsrang, die Grundrechte, die Organisation und Funktion der staatlichen Organe sowie deren Verhältnis zueinander.',
     compatibleJurisdictions: ['BR', 'LR', 'EU'], // Alle Jurisdiktionen
   },
   {
-    id: 7,
+    id: 5,
     title: 'Verwaltungsrecht',
     description: 'Aktuelle Änderungen im Verwaltungsrecht',
     longDescription: 'Das Verwaltungsrecht regelt das Verhältnis zwischen der öffentlichen Verwaltung und den Bürgern sowie die Organisation und Tätigkeit der öffentlichen Verwaltung selbst. Es umfasst Bereiche wie Baurecht, Umweltrecht, Polizei- und Ordnungsrecht.',
     compatibleJurisdictions: ['BR', 'LR', 'EU'], // Alle Jurisdiktionen
   },
   {
-    id: 8,
+    id: 6,
     title: 'Zivilrecht',
     description: 'Neuigkeiten im Zivilrecht',
     longDescription: 'Das Zivilrecht, auch Privatrecht genannt, regelt die Rechtsbeziehungen zwischen Privatpersonen und juristischen Personen. Es umfasst das Vertragsrecht, Sachenrecht, Schadensersatzrecht und weitere Bereiche der privaten Rechtsbeziehungen.',
     compatibleJurisdictions: ['BR', 'EU'], // Bundesrecht und EU-Recht
   },
   {
-    id: 9,
+    id: 7,
     title: 'Wirtschaftsprivatrecht',
     description: 'Updates zum Wirtschaftsprivatrecht',
     longDescription: 'Das Wirtschaftsprivatrecht umfasst die rechtlichen Regelungen für wirtschaftliche Aktivitäten zwischen Privatpersonen und Unternehmen. Es beinhaltet Handelsrecht, Gesellschaftsrecht, Wettbewerbsrecht, Urheberrecht und verwandte Rechtsgebiete.',
     compatibleJurisdictions: ['BR', 'EU'], // Bundesrecht und EU-Recht
   },
   {
-    id: 10,
+    id: 8,
     title: 'Finanzrecht',
     description: 'Änderungen im Finanzrecht',
     longDescription: 'Das Finanzrecht regelt den Umgang mit finanziellen Mitteln im öffentlichen Bereich sowie die Finanzmarktregulierung. Es umfasst das Haushaltsrecht, Finanzausgleich, Banken- und Kapitalmarktrecht sowie Versicherungsaufsichtsrecht.',
     compatibleJurisdictions: ['BR', 'EU'], // Bundesrecht und EU-Recht
   },
   {
-    id: 11,
+    id: 9,
     title: 'Strafrecht',
     description: 'Entwicklungen im Strafrecht',
     longDescription: 'Das Strafrecht befasst sich mit der staatlichen Sanktionierung von Handlungen, die als strafwürdig angesehen werden. Es umfasst das materielle Strafrecht (Straftaten und Rechtsfolgen) sowie das formelle Strafrecht (Strafverfahrensrecht).',
     compatibleJurisdictions: ['BR', 'EU'], // Bundesrecht und EU-Recht
   },
   {
-    id: 12,
+    id: 10,
     title: 'Verfahrensrecht',
     description: 'Aktuelle Änderungen im Verfahrensrecht',
     longDescription: 'Das Verfahrensrecht regelt die formellen Abläufe von Gerichtsverfahren und Verwaltungsverfahren. Es umfasst die Zivilprozessordnung, Strafprozessordnung, Verwaltungsverfahrensgesetze und weitere verfahrensrechtliche Vorschriften.',
@@ -109,7 +95,7 @@ const jurisdictions = [
 const HomeScreen = ({ navigation }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [selectedJurisdictions, setSelectedJurisdictions] = useState([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(3); // Mock count for UI
+  const [unreadNotifications, setUnreadNotifications] = useState(1); // Mock count for UI
   const [selectedCategories, setSelectedCategories] = useState({});
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
