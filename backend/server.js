@@ -1,7 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const xml2js = require('xml2js');
 const cors = require('cors');
+const BgblXmlParser = require('./xmlParser');
 
 const app = express();
 const port = 3000;
@@ -19,34 +19,27 @@ app.use((req, res, next) => {
 });
 
 // Endpoint für Bundesgesetzblätter Teil I
-app.get('/api/bundesgesetzblaetter', async (req, res) => {
-  console.log('Anfrage an /api/bundesgesetzblaetter empfangen');
+app.get('/api/notifications', async (req, res) => {
+  console.log('Anfrage an /api/notifications empfangen');
   
   try {
-    const url = "https://data.bka.gv.at/ris/api/v2.6/Bundesrecht";
-    
-    const body = {
+    const baseUrl = "https://data.bka.gv.at/ris/api/v2.6/Bundesrecht";
+    const params = new URLSearchParams({
       Applikation: "BgblAuth",
-      Teil: {
-        SucheInTeil1: true
-      },
-      DokumenteProSeite: "Ten",
-      Sortierung: {
-        SortDirection: "Descending",
-        SortedByColumn: "Kundmachungsdatum"
-      },
-      Seitennummer: 1
-    };
+      "Teil.SucheInTeil1": "true",
+      "Typ.SucheInGesetzen": "true",
+      "Kundmachung.Periode": "EinemMonat"
+    });
 
-    console.log('Sende Anfrage an RIS API...');
+    const url = `${baseUrl}?${params.toString()}`;
+    console.log('Sende Anfrage an RIS API:', url);
     
     // RIS API abfragen
     const response = await fetch(url, {
-      method: "POST",
+      method: "GET",
       headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
+        "Accept": "application/json"
+      }
     });
 
     if (!response.ok) {
@@ -65,7 +58,8 @@ app.get('/api/bundesgesetzblaetter', async (req, res) => {
     const results = data.OgdSearchResult.OgdDocumentResults.OgdDocumentReference;
     console.log(`${results.length} Dokumente gefunden`);
     
-    const xmlContents = [];
+    const notifications = [];
+    const xmlParser = new BgblXmlParser();
 
     // Für jedes Dokument die XML-URL finden und den Inhalt abrufen
     for (const doc of results) {
@@ -88,40 +82,31 @@ app.get('/api/bundesgesetzblaetter', async (req, res) => {
             if (xmlResponse.ok) {
               console.log(`XML für ${bgblInfo.Bgblnummer} erfolgreich abgerufen`);
               const xmlText = await xmlResponse.text();
-              xmlContents.push({
-                metadata: {
-                  bgblNummer: bgblInfo.Bgblnummer,
-                  titel: metadata.Bundesrecht.Titel,
-                  datum: bgblInfo.Ausgabedatum,
-                  typ: bgblInfo.Typ
-                },
-                xml: xmlText
+              
+              const notification = xmlParser.parse(xmlText, {
+                Bgblnummer: bgblInfo.Bgblnummer,
+                Titel: metadata.Bundesrecht.Titel,
+                Ausgabedatum: bgblInfo.Ausgabedatum
               });
-            } else {
-              console.error(`Fehler beim Abrufen des XML für ${bgblInfo.Bgblnummer}: ${xmlResponse.status}`);
+              
+              notifications.push(notification);
             }
-          } else {
-            console.error(`Keine XML-URL für ${bgblInfo.Bgblnummer} gefunden`);
           }
-        } else {
-          console.error(`Keine ContentReference für ${bgblInfo.Bgblnummer} gefunden`);
         }
       } catch (docErr) {
         console.error(`Fehler beim Verarbeiten eines Dokuments: ${docErr.message}`);
       }
     }
 
-    console.log(`Insgesamt ${xmlContents.length} XML-Dokumente abgerufen`);
-    
-    // Sende die XML-Inhalte als JSON-Response
+    // Sende die formatierten Benachrichtigungen als JSON-Response
     res.json({
       success: true,
-      count: xmlContents.length,
-      documents: xmlContents
+      count: notifications.length,
+      notifications: notifications
     });
 
   } catch (err) {
-    console.error("Fehler beim Abrufen der Bundesgesetzblätter:", err.message);
+    console.error("Fehler beim Abrufen der Benachrichtigungen:", err.message);
     res.status(500).json({
       success: false,
       error: err.message
@@ -139,9 +124,9 @@ app.get('/api/test', (req, res) => {
 });
 
 // Starte den Server
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server läuft auf http://localhost:${port}`);
   console.log(`Verfügbare Endpoints:`);
-  console.log(`- GET /api/bundesgesetzblaetter - Bundesgesetzblätter Teil I abrufen`);
+  console.log(`- GET /api/notifications - Bundesgesetzblätter Teil I abrufen`);
   console.log(`- GET /api/test - API-Test`);
-}); 
+});

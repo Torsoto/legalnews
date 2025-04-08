@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "nodemon": "^3.1.9",
     "react-native-dotenv": "^3.4.11"
   },
   "private": true

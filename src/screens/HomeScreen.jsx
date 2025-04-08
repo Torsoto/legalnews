@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+
+const SERVER_URL = 'http://192.168.0.42:3000/api/notifications';
 
 const legalCategories = [
   {
