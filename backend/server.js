@@ -1,7 +1,11 @@
-const express = require('express');
-const fetch = require('node-fetch');
-const cors = require('cors');
-const BgblXmlParser = require('./xmlParser');
+import express from 'express';
+import fetch from 'node-fetch';
+import cors from 'cors';
+import BgblXmlParser from './xmlParser.js';
+import { summarizeWithGemini } from './AI.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const port = 3000;
@@ -88,6 +92,11 @@ app.get('/api/notifications', async (req, res) => {
                 Titel: metadata.Bundesrecht.Titel,
                 Ausgabedatum: bgblInfo.Ausgabedatum
               });
+
+              // Generate AI summary
+              console.log(`Generiere KI-Zusammenfassung für ${bgblInfo.Bgblnummer}`);
+              const fullText = `${notification.title}\n${notification.description}\n${notification.articles.map(art => `${art.title}\n${art.subtitle}`).join('\n')}`;
+              notification.aiSummary = await summarizeWithGemini(fullText);
               
               notifications.push(notification);
             }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,12 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
-
-const SERVER_URL = 'http://192.168.0.42:3000/api/notifications';
+import { clearAuth } from '../utils/auth';
+import { Ionicons } from '@expo/vector-icons';
 
 const legalCategories = [
   {
@@ -100,13 +101,55 @@ const HomeScreen = ({ navigation }) => {
   const [unreadNotifications, setUnreadNotifications] = useState(1); // Mock count for UI
   const [selectedCategories, setSelectedCategories] = useState({});
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const SERVER_URL = 'http://192.168.0.136:3000/api/notifications';
+
+  // Set up the header right configuration
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View className="flex-row items-center mr-4">
+          <TouchableOpacity 
+            className="mr-6"
+            onPress={() => navigation.navigate('Benachrichtigungen')}
+          >
+            <Ionicons name="notifications-outline" size={24} color="white" />
+            {unreadNotifications > 0 && (
+              <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-4 h-4 items-center justify-center">
+                <Text className="text-white text-xs font-bold">{unreadNotifications}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowMenu(!showMenu)}>
+            <Ionicons name="settings-outline" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, unreadNotifications, showMenu]);
+
+  const handleTest = async () => {
+    try {
+      const response = await fetch(SERVER_URL);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  }
 
   const handleLogout = async () => {
     try {
+      setShowMenu(false); // Close the menu first
       await signOut(auth);
-      navigation.replace('Anmelden');
+      await clearAuth();
+      // Navigation will be handled by the auth state change in App.jsx
+      console.log('User logged out successfully');
     } catch (error) {
-      Alert.alert('Fehler', error.message);
+      console.error('Logout error:', error);
+      Alert.alert('Fehler beim Abmelden', error.message);
     }
   };
 
@@ -309,28 +352,40 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}>
-      <View className="flex-row justify-between items-center px-5 py-4 bg-primary mt-2">
-        <Text className="text-2xl font-bold text-white">Rechtsnews</Text>
-        <View className="flex-row">
+      {/* Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <View className="flex-1">
+          <View className="absolute top-16 right-4 bg-white rounded-lg shadow-lg w-48 z-50">
+            <TouchableOpacity 
+              className="px-4 py-3 border-b border-gray-200 flex-row items-center"
+              onPress={() => {
+                setShowMenu(false);
+                setTimeout(() => navigation.navigate('Profil'), 100);
+              }}
+            >
+              <Ionicons name="person-outline" size={20} color="#666" className="mr-2" />
+              <Text className="text-gray-800 ml-2">Profil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className="px-4 py-3 flex-row items-center"
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" className="mr-2" />
+              <Text className="text-red-500 ml-2">Abmelden</Text>
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity 
-            className="px-4 py-2 mr-2 relative" 
-            onPress={() => navigation.navigate('Benachrichtigungen')}
-          >
-            <Text className="text-white">📋</Text>
-            {unreadNotifications > 0 && (
-              <View className="absolute top-1 right-1 bg-red-500 rounded-full w-4 h-4 items-center justify-center">
-                <Text className="text-white text-xs font-bold">{unreadNotifications}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity 
-            className="px-4 py-2" 
-            onPress={handleLogout}
-          >
-            <Text className="text-white">Abmelden</Text>
-          </TouchableOpacity>
+            className="flex-1"
+            activeOpacity={0}
+            onPress={() => setShowMenu(false)}
+          />
         </View>
-      </View>
+      </Modal>
 
       {/* Filter section */}
       <View className="border-b border-gray-200">

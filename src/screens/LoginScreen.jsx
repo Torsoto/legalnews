@@ -5,68 +5,94 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Image,
+  TouchableWithoutFeedback,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import { persistAuth } from '../utils/auth';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Benutzer angemeldet:', userCredential.user.email);
-      navigation.replace('Home');
+      await persistAuth(userCredential.user);
+      // Navigation will be handled by the auth state change in App.jsx
     } catch (error) {
-      Alert.alert('Fehler', error.message);
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-white p-5">
-      <View className="mt-16 mb-10">
-        <Text className="text-3xl font-bold">Willkommen</Text>
-        <Text className="text-3xl font-bold text-primary">zurück!</Text>
-        <Text className="text-base text-gray-500 mt-2">Schön, dass Sie wieder da sind</Text>
-      </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 bg-white"
+      >
+        <View className="flex-1 bg-white p-5">
+          <View className="mt-16 mb-10">
+            <Text className="text-3xl font-bold">Willkommen</Text>
+            <Text className="text-3xl font-bold text-primary">zurück!</Text>
+            <Text className="text-base text-gray-500 mt-2">Schön, dass Sie wieder da sind</Text>
+          </View>
 
-      <View className="flex-1">
-        <TextInput
-          className="border border-gray-200 p-4 rounded-xl mb-4 text-base"
-          placeholder="E-Mail"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          className="border border-gray-200 p-4 rounded-xl mb-4 text-base"
-          placeholder="Passwort"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <View className="flex-1">
+            <TextInput
+              className="border border-gray-200 p-4 rounded-xl mb-4 text-base"
+              placeholder="E-Mail"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
 
-        <TouchableOpacity className="self-end mb-5">
-          <Text className="text-primary">Passwort vergessen?</Text>
-        </TouchableOpacity>
+            <TextInput
+              className="border border-gray-200 p-4 rounded-xl mb-4 text-base"
+              placeholder="Passwort"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
 
-        <TouchableOpacity 
-          className="bg-primary p-4 rounded-xl items-center"
-          onPress={handleLogin}
-        >
-          <Text className="text-white font-bold text-base">Anmelden</Text>
-        </TouchableOpacity>
+            <TouchableOpacity className="self-end mb-5">
+              <Text className="text-primary">Passwort vergessen?</Text>
+            </TouchableOpacity>
 
-        <View className="flex-row justify-center mt-5">
-          <Text className="text-gray-500">Noch kein Konto? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Registrieren')}>
-            <Text className="text-primary font-bold">Registrieren</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-primary p-4 rounded-xl items-center"
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text className="text-white font-bold text-base">
+                {loading ? 'Anmeldung läuft...' : 'Anmelden'}
+              </Text>
+            </TouchableOpacity>
+
+            <View className="flex-row justify-center mt-5">
+              <Text className="text-gray-500">Noch kein Konto? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Registrieren')}>
+                <Text className="text-primary font-bold">Registrieren</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-    </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
