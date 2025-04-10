@@ -9,35 +9,78 @@ Backend service for the LegalNews mobile application, providing legal news and u
 - Firebase integration for authentication and data storage
 - RESTful API endpoints for news and user management
 
-## Prerequisites
+## Getting Started
 
-- Node.js (v18 or higher)
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+- Node.js 16+ 
 - npm or yarn
-- Google Cloud account with API access
-- Firebase project
 
-## Installation
+### Installing
 
-1. Clone the repository
-2. Install dependencies:
+1. Clone this repository
+2. Navigate to the backend directory
+3. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Create a `.env` file in the root directory with the following variables:
-```env
-# Google API Configuration
-GOOGLE_API_KEY=your_google_api_key
+or
 
-# Firebase Configuration
+```bash
+yarn install
+```
+
+### Configuration
+
+Create a `.env` file in the backend directory with the following variables:
+
+```
+# Google API Key for Gemini AI
+GOOGLE_API_KEY=your_google_api_key
+```
+
+Firebase admin SKD configuration:
+```
+# Firebase Configuration 
+# 1. Go to the Firebase console
+# 2. Go to Project Settings > Service accounts
+# 3. Click "Generate new private key" to download your Firebase Admin SDK private key JSON
+# 4. Save the downloaded file in the backend/config directory as "serviceAccountKey.json"
+
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_PRIVATE_KEY="your_firebase_private_key"
+FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+FIREBASE_DATABASE_URL=your_firebase_database_url
 FIREBASE_API_KEY=your_firebase_api_key
 FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
 FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
 FIREBASE_APP_ID=your_firebase_app_id
 FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
+
 ```
+
+Make sure to replace all placeholders with your actual values.
+
+### Running the Application
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+or 
+
+```bash
+yarn dev
+```
+
+The server will run on http://localhost:3000 by default.
 
 ## Project Structure
 
@@ -71,6 +114,11 @@ backend/
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
+
+### RIS API Endpoints
+- `GET /api/notifications` - Fetch notifications from RIS API
+- `GET /api/stored-notifications` - Fetch notifications from Firestore
+- `GET /api/test` - Test endpoint to verify the API is working
 
 ## Error Handling
 
