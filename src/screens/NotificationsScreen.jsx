@@ -12,13 +12,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const SERVER_URL = 'http://192.168.0.136:3000/api/notifications';
+// Update to use the stored-notifications endpoint
+const SERVER_URL = 'http://192.168.0.136:3000/api/stored-notifications';
 
 const NotificationsScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const [expandedNotification, setExpandedNotification] = useState(null);
   const [expandedArticles, setExpandedArticles] = useState({});
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const [expandedSummaries, setExpandedSummaries] = useState({});
   const [bookmarkedNotifications, setBookmarkedNotifications] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,86 +39,55 @@ const NotificationsScreen = ({ navigation }) => {
       }
       const data = await response.json();
       
-      // Process notifications to fix the articles and changes
+      // Process notifications to distribute changes to articles
       const processedNotifications = data.notifications.map(notification => {
-        // Skip if there are no articles
-        if (!notification.articles || notification.articles.length <= 1) {
+        // If there are no changes or no articles, return as is
+        if (!notification.changes || notification.changes.length === 0 || 
+            !notification.articles || notification.articles.length === 0) {
           return notification;
         }
         
-        // In the API response, all changes are in the last article
-        const lastArticle = notification.articles[notification.articles.length - 1];
-        const allChanges = [...(lastArticle?.changes || [])];
-        const lawText = lastArticle?.law || '';
+        // Make a deep copy of notification
+        const processedNotification = { ...notification };
         
-        // If there are no changes to redistribute, return as is
-        if (allChanges.length === 0) {
-          return notification;
-        }
+        // Add changes array to each article
+        processedNotification.articles = notification.articles.map(article => ({
+          ...article,
+          changes: []
+        }));
         
-        // Create a new array of articles
-        const processedArticles = notification.articles.map((article, index) => {
-          // Skip the last article as we'll rebuild it
-          if (index === notification.articles.length - 1) {
-            return {
-              ...article,
-              law: '', // Clear law from last article
-              changes: [] // Clear changes from last article
-            };
-          }
-          
-          // Other articles will be updated later
-          return {
-            ...article,
-            law: '',
-            changes: []
-          };
-        });
-        
-        // Set the law text on the first article
-        if (processedArticles.length > 0 && lawText) {
-          processedArticles[0].law = lawText;
-        }
-        
-        // Group changes by the numbering pattern
+        // Distribute changes to articles - group by "1." patterns
         let articleIndex = 0;
-        let currentGroup = [];
-        const groupedChanges = [];
+        let currentChanges = [];
         
-        allChanges.forEach((change, index) => {
-          // Check if instruction starts with "1." which indicates a new set
-          if (/^1[.)]\s/.test(change.instruction) && index > 0) {
-            // Save the current group
-            groupedChanges.push([...currentGroup]);
-            currentGroup = []; // Reset for new group
+        notification.changes.forEach((change, index) => {
+          // If we encounter a change that starts with "1.", 
+          // and it's not the first change, move to next article
+          if (change.instruction.trim().startsWith("1.") && index > 0) {
+            // Assign current batch of changes to the current article
+            if (articleIndex < processedNotification.articles.length && currentChanges.length > 0) {
+              processedNotification.articles[articleIndex].changes = [...currentChanges];
+              // Reset current changes and move to next article
+              currentChanges = [];
+              articleIndex++;
+            }
           }
           
-          // Add to current group
-          currentGroup.push(change);
+          // Add the current change to the batch
+          currentChanges.push(change);
         });
         
-        // Don't forget to add the last group
-        if (currentGroup.length > 0) {
-          groupedChanges.push([...currentGroup]);
+        // Don't forget to assign the last batch of changes
+        if (currentChanges.length > 0 && articleIndex < processedNotification.articles.length) {
+          processedNotification.articles[articleIndex].changes = [...currentChanges];
         }
         
-        // Distribute grouped changes to articles
-        groupedChanges.forEach((group, index) => {
-          // Make sure we don't go beyond available articles
-          if (index < processedArticles.length) {
-            processedArticles[index].changes = group;
-          }
-        });
-        
-        return {
-          ...notification,
-          articles: processedArticles
-        };
+        return processedNotification;
       });
       
       setNotifications(processedNotifications);
     } catch (error) {
-      console.error('Error fetching or processing notifications:', error);
+      console.error('Error fetching notifications:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -142,6 +113,13 @@ const NotificationsScreen = ({ navigation }) => {
 
   const toggleDescriptionExpand = (id) => {
     setExpandedDescriptions(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const toggleSummaryExpand = (id) => {
+    setExpandedSummaries(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
@@ -309,7 +287,35 @@ const NotificationsScreen = ({ navigation }) => {
 
               {expandedNotification === notification.id && (
                 <View className="px-4 pb-4 pt-2 bg-gray-50 border-t border-gray-200">
-                  {notification.articles.map((article) => (
+                  {/* AI Summary Section */}
+                  {notification.aiSummary && (
+                    <View className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                      <View className="flex-row items-center mb-2">
+                        <Ionicons name="sparkles-outline" size={18} color="#2196F3" />
+                        <Text className="text-primary font-bold ml-1">KI-Zusammenfassung</Text>
+                      </View>
+                      
+                      <TouchableOpacity 
+                        onPress={() => toggleSummaryExpand(notification.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text 
+                          className="text-gray-700"
+                          numberOfLines={expandedSummaries[notification.id] ? undefined : 3}
+                        >
+                          {notification.aiSummary}
+                        </Text>
+                        {notification.aiSummary.length > 150 && (
+                          <Text className="text-primary text-sm mt-1">
+                            {expandedSummaries[notification.id] ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  
+                  {/* Articles Section with Changes */}
+                  {notification.articles?.map((article) => (
                     <View key={article.id} className="mb-3 border border-gray-200 rounded-lg overflow-hidden">
                       <TouchableOpacity
                         className="p-3 bg-white flex-row justify-between items-center"
@@ -317,7 +323,7 @@ const NotificationsScreen = ({ navigation }) => {
                       >
                         <View>
                           <Text className="font-bold text-base">
-                          {article.subtitle}
+                          {article.subtitle || article.title}
                           </Text>
                         </View>
                         <Text className="text-primary">
@@ -325,9 +331,14 @@ const NotificationsScreen = ({ navigation }) => {
                         </Text>
                       </TouchableOpacity>
                       
+                      {/* Display article changes when expanded */}
                       {expandedArticles[article.id] && (
                         <View className="p-3 bg-gray-50 border-t border-gray-200">
-                          {article.changes.map(renderChange)}
+                          {article.changes && article.changes.length > 0 ? (
+                            article.changes.map(renderChange)
+                          ) : (
+                            <Text className="text-gray-500 italic">Keine Änderungen vorhanden</Text>
+                          )}
                         </View>
                       )}
                     </View>

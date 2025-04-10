@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { gemini20Flash, googleAI } from '@genkit-ai/googleai';
+import { gemini20FlashLite, googleAI } from '@genkit-ai/googleai';
 import { genkit } from "genkit";
 
 dotenv.config();
@@ -7,7 +7,7 @@ dotenv.config();
 // Configure Genkit instance
 const ai = genkit({
   plugins: [googleAI()],
-  model: gemini20Flash,
+  model: gemini20FlashLite,
 });
 
 async function summarizeWithGemini(originalText) {

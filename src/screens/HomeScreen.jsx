@@ -128,18 +128,6 @@ const HomeScreen = ({ navigation }) => {
     });
   }, [navigation, unreadNotifications, showMenu]);
 
-  const handleTest = async () => {
-    try {
-      const response = await fetch(SERVER_URL);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  }
-
   const handleLogout = async () => {
     try {
       setShowMenu(false); // Close the menu first
