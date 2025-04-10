@@ -38,7 +38,7 @@ This project uses Firebase Admin SDK. To configure it:
 1. Go to the [Firebase console](https://console.firebase.google.com/)
 2. Navigate to Project Settings > Service accounts
 3. Click "Generate new private key" to download your Firebase Admin SDK private key JSON
-4. Save the downloaded file in the `backend/config` directory as `serviceAccountKey.json`
+4. Save the downloaded file in the root directory as `serviceAccountKey.json`
 
 ### Environment Variables
 
@@ -47,16 +47,6 @@ Create a `.env` file in the backend directory with the following variables:
 ```
 # Google API Key for Gemini AI
 GOOGLE_API_KEY=your_google_api_key
-
-# Firebase Configuration (mostly for client usage)
-FIREBASE_API_KEY=your_firebase_api_key
-FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
-FIREBASE_APP_ID=your_firebase_app_id
-FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
-FIREBASE_DATABASE_URL=your_firebase_database_url
 ```
 
 Replace all placeholders with your actual values.
