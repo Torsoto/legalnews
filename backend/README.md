@@ -1,24 +1,25 @@
 # LegalNews Backend
 
-Backend service for the LegalNews mobile application, providing legal news and updates from official sources.
+Backend service for the LegalNews mobile application, providing legal news and updates from official sources in Austria.
 
 ## Features
 
-- XML parsing for legal documents
-- Integration with Gemini AI (gemini 2.0 flash-lite)
-- Firebase integration for authentication and data storage
-- RESTful API endpoints for news and user management
+- XML parsing for legal documents from the Austrian RIS (Rechtsinformationssystem)
+- Integration with Google's Gemini AI for document summarization
+- Firebase Firestore for data storage and persistence
+- RESTful API endpoints for legal notifications
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+These instructions will help you set up and run the project locally for development.
 
 ### Prerequisites
 
 - Node.js 16+ 
 - npm or yarn
+- Firebase account
 
-### Installing
+### Installation
 
 1. Clone this repository
 2. Navigate to the backend directory
@@ -26,45 +27,39 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 npm install
-```
-
-or
-
-```bash
+# or
 yarn install
 ```
 
-### Configuration
+### Firebase Setup
+
+This project uses Firebase Admin SDK. To configure it:
+
+1. Go to the [Firebase console](https://console.firebase.google.com/)
+2. Navigate to Project Settings > Service accounts
+3. Click "Generate new private key" to download your Firebase Admin SDK private key JSON
+4. Save the downloaded file in the `backend/config` directory as `serviceAccountKey.json`
+
+### Environment Variables
 
 Create a `.env` file in the backend directory with the following variables:
 
 ```
 # Google API Key for Gemini AI
 GOOGLE_API_KEY=your_google_api_key
-```
 
-Firebase admin SKD configuration:
-```
-# Firebase Configuration 
-# 1. Go to the Firebase console
-# 2. Go to Project Settings > Service accounts
-# 3. Click "Generate new private key" to download your Firebase Admin SDK private key JSON
-# 4. Save the downloaded file in the backend/config directory as "serviceAccountKey.json"
-
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
-FIREBASE_PRIVATE_KEY="your_firebase_private_key"
-FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-FIREBASE_DATABASE_URL=your_firebase_database_url
+# Firebase Configuration (mostly for client usage)
 FIREBASE_API_KEY=your_firebase_api_key
 FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
 FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
 FIREBASE_APP_ID=your_firebase_app_id
 FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
-
+FIREBASE_DATABASE_URL=your_firebase_database_url
 ```
 
-Make sure to replace all placeholders with your actual values.
+Replace all placeholders with your actual values.
 
 ### Running the Application
 
@@ -72,73 +67,59 @@ Start the development server:
 
 ```bash
 npm run dev
-```
-
-or 
-
-```bash
+# or
 yarn dev
 ```
 
 The server will run on http://localhost:3000 by default.
 
+## API Endpoints
+
+The backend currently provides these endpoints:
+
+### Legal Notifications
+- `GET /api/notifications` - Fetch latest legal notifications from the Austrian RIS API
+- `GET /api/stored-notifications` - Retrieve already stored notifications from Firestore
+- `GET /api/test` - Simple test endpoint to verify API connectivity
+
 ## Project Structure
 
 ```
 backend/
+├── config/
+│   └── firebase-admin.js    # Firebase Admin SDK configuration
 ├── src/
-│   ├── index.js          # Main server entry point
-│   ├── routes/           # API route definitions
-│   ├── controllers/      # Route controllers
-│   ├── services/         # Business logic
-│   └── utils/            # Utility functions
-├── config/               # Configuration files
-│   └── firebase.js       # Firebase configuration
-├── .env                  # Environment variables
-└── package.json          # Project dependencies
+│   ├── server.js            # Main server entry point
+│   ├── xmlParser.js         # XML parsing logic for legal documents
+│   ├── AI.js                # Gemini AI integration for summarization
+│   └── service/
+│       └── firestoreService.js  # Firebase Firestore operations
+├── .env                     # Environment variables
+└── package.json             # Project dependencies
 ```
-
-## Available Scripts
-
-- `npm start` - Start the server in production mode
-- `npm run dev` - Start the server in development mode with hot reloading
-
-## API Endpoints
-
-### News Endpoints
-- `GET /api/news` - Get all news articles
-- `GET /api/news/:id` - Get specific news article
-- `GET /api/news/category/:category` - Get news by category
-
-### User Endpoints
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-
-### RIS API Endpoints
-- `GET /api/notifications` - Fetch notifications from RIS API
-- `GET /api/stored-notifications` - Fetch notifications from Firestore
-- `GET /api/test` - Test endpoint to verify the API is working
 
 ## Error Handling
 
 The API uses standard HTTP status codes and returns errors in the following format:
+
 ```json
 {
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human readable error message"
-  }
+  "success": false,
+  "error": "Error message"
 }
 ```
 
-## Contributing
+## Response Format
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Successful responses follow this format:
+
+```json
+{
+  "success": true,
+  "count": 10,
+  "notifications": [...]
+}
+```
 
 ## License
 
