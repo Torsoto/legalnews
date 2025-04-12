@@ -1,9 +1,10 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, initializeAuth, getReactNativePersistence } from "firebase/auth";
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -11,8 +12,8 @@ import {
   FIREBASE_STORAGE_BUCKET,
   FIREBASE_MESSAGING_SENDER_ID,
   FIREBASE_APP_ID,
-  FIREBASE_MEASUREMENT_ID
-} from '@env';
+  FIREBASE_MEASUREMENT_ID,
+} from "@env";
 
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
@@ -21,11 +22,14 @@ const firebaseConfig = {
   storageBucket: FIREBASE_STORAGE_BUCKET,
   messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
   appId: FIREBASE_APP_ID,
-  measurementId: FIREBASE_MEASUREMENT_ID
+  measurementId: FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
 // Only initialize analytics on web platform
 const analytics = Platform.select({
   web: () => getAnalytics(app),
@@ -34,8 +38,8 @@ const analytics = Platform.select({
 
 // Initialize Auth with AsyncStorage persistence
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
 });
 
-export { auth };
+export { auth, db };
 export default app;
