@@ -1,16 +1,24 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./config/firebase";
 import { getPersistedAuth, persistAuth, clearAuth } from "./src/utils/auth";
+import { Ionicons } from "@expo/vector-icons";
+
+// Screens
 import HomeScreen from "./src/screens/HomeScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignUpScreen from "./src/screens/SignUpScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
-import NotificationsScreen from "./src/screens/NotificationsScreen";
+import BookmarksScreen from "./src/screens/BookmarksScreen";
+import LegalNewsScreen from "./src/screens/LegalNewsScreen";
+import NewsDetailScreen from "./src/screens/NewsDetailScreen";
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -52,45 +60,67 @@ export default function App() {
     return null; // Or a loading screen
   }
 
+  const TabStack = () => {
+    return (
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName;
+
+            if (route.name === 'Rechtsnews') {
+              iconName = focused ? 'newspaper' : 'newspaper-outline';
+            } else if (route.name === 'Abonnements') {
+              iconName = focused ? 'home' : 'home-outline';
+            } else if (route.name === 'Profil') {
+              iconName = focused ? 'person' : 'person-outline';
+            } else if (route.name === 'Lesezeichen') {
+              iconName = focused ? 'bookmark' : 'bookmark-outline';
+            }
+
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: "#2196F3",
+          tabBarInactiveTintColor: "gray",
+          headerShown: false,
+        })}
+      >
+        <Tab.Screen 
+          name="Rechtsnews" 
+          component={LegalNewsScreen}
+        />
+        <Tab.Screen 
+          name="Abonnements" 
+          component={HomeScreen}
+        />
+        <Tab.Screen 
+          name="Lesezeichen" 
+          component={BookmarksScreen}
+        />
+        <Tab.Screen 
+          name="Profil" 
+          component={ProfileScreen}
+        />
+      </Tab.Navigator>
+    );
+  };
+
   return (
     <NavigationContainer>
       <Stack.Navigator>
         {user ? (
           <>
             <Stack.Screen
-              name="Home"
-              component={HomeScreen}
+              name="Main"
+              component={TabStack}
               options={{
-                headerShown: true,
-                headerTitle: "Rechtsnews",
-                headerStyle: {
-                  backgroundColor: "#2196F3",
-                },
-                headerTintColor: "#fff",
+                headerShown: false
               }}
             />
             <Stack.Screen
-              name="Profil"
-              component={ProfileScreen}
+              name="NewsDetail"
+              component={NewsDetailScreen}
               options={{
-                headerShown: true,
-                headerTitle: "Profil",
-                headerStyle: {
-                  backgroundColor: "#2196F3",
-                },
-                headerTintColor: "#fff",
-              }}
-            />
-            <Stack.Screen
-              name="Benachrichtigungen"
-              component={NotificationsScreen}
-              options={{
-                headerShown: true,
-                headerTitle: "Benachrichtigungen",
-                headerStyle: {
-                  backgroundColor: "#2196F3",
-                },
-                headerTintColor: "#fff",
+                headerShown: false
               }}
             />
           </>
