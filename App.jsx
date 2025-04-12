@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './config/firebase';
-import { getPersistedAuth, persistAuth, clearAuth } from './src/utils/auth';
-import HomeScreen from './src/screens/HomeScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import NotificationsScreen from './src/screens/NotificationsScreen';
+import { useState, useEffect } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./config/firebase";
+import { getPersistedAuth, persistAuth, clearAuth } from "./src/utils/auth";
+import HomeScreen from "./src/screens/HomeScreen";
+import LoginScreen from "./src/screens/LoginScreen";
+import SignUpScreen from "./src/screens/SignUpScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
+import NotificationsScreen from "./src/screens/NotificationsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -23,7 +24,7 @@ export default function App() {
           setUser(persistedUser);
         }
       } catch (error) {
-        console.error('Error checking persisted auth:', error);
+        console.error("Error checking persisted auth:", error);
       } finally {
         setLoading(false);
       }
@@ -56,51 +57,58 @@ export default function App() {
       <Stack.Navigator>
         {user ? (
           <>
-            <Stack.Screen 
-              name="Home" 
-              component={HomeScreen} 
-              options={{ 
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{
                 headerShown: true,
-                headerTitle: 'Rechtsnews',
+                headerTitle: "Rechtsnews",
                 headerStyle: {
-                  backgroundColor: '#2196F3',
+                  backgroundColor: "#2196F3",
                 },
-                headerTintColor: '#fff',
+                headerTintColor: "#fff",
               }}
             />
-            <Stack.Screen 
-              name="Profil" 
-              component={ProfileScreen} 
-              options={{ 
+            <Stack.Screen
+              name="Profil"
+              component={ProfileScreen}
+              options={{
                 headerShown: true,
-                headerTitle: 'Profil',
+                headerTitle: "Profil",
                 headerStyle: {
-                  backgroundColor: '#2196F3',
+                  backgroundColor: "#2196F3",
                 },
-                headerTintColor: '#fff',
+                headerTintColor: "#fff",
               }}
             />
-            <Stack.Screen 
-              name="Benachrichtigungen" 
-              component={NotificationsScreen} 
-              options={{ 
+            <Stack.Screen
+              name="Benachrichtigungen"
+              component={NotificationsScreen}
+              options={{
                 headerShown: true,
-                headerTitle: 'Benachrichtigungen',
+                headerTitle: "Benachrichtigungen",
                 headerStyle: {
-                  backgroundColor: '#2196F3',
+                  backgroundColor: "#2196F3",
                 },
-                headerTintColor: '#fff',
+                headerTintColor: "#fff",
               }}
             />
           </>
         ) : (
-          <Stack.Screen 
-            name="Login" 
-            component={LoginScreen} 
-            options={{ headerShown: false }}
-          />
+          <>
+            <Stack.Screen
+              name="Anmelden"
+              component={LoginScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Registrieren"
+              component={SignUpScreen}
+              options={{ headerShown: false }}
+            />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
-} 
+}
