@@ -11,9 +11,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { PORT } from "@env";
 
 // Update to use the stored-notifications endpoint
-const SERVER_URL = "http://192.168.0.136:3001/api/stored-notifications";
+const SERVER_URL = `http://192.168.0.136:${PORT}/api/stored-notifications`;
 
 const NotificationsScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
