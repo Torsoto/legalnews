@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import NotificationCard from "../components/NotificationCard";
 import * as bookmarkStorage from "../utils/bookmarkStorage";
 import { API } from "../constants";
+import { get } from "../utils/apiClient"; // Import the authenticated API client
 
 const EmptyBookmarks = () => (
   <View className="flex-1 items-center justify-center p-8">
@@ -61,12 +62,12 @@ const BookmarksScreen = ({ navigation }) => {
       }
       
       // Then fetch all notifications to filter the bookmarked ones
-      const response = await fetch(API.BASE_URL + API.ENDPOINTS.STORED_NOTIFICATIONS);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Use authenticated API client instead of direct fetch
+      const data = await get(API.ENDPOINTS.STORED_NOTIFICATIONS);
       
-      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch notifications');
+      }
       
       // Filter only bookmarked notifications
       const bookmarkedItems = data.notifications.filter(

@@ -34,7 +34,6 @@ app.listen(port, "0.0.0.0", () => {
   console.log(`- GET /api/stored-notifications - Retrieve stored notifications from Firestore`);
   console.log(`- GET /api/user/subscriptions/:userId - Get user subscriptions`);
   console.log(`- GET /api/test - Test API connectivity`);
-
 });
 
 // Handle unhandled promise rejections

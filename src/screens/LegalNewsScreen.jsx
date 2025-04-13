@@ -21,6 +21,7 @@ import { API } from "../constants";
 import * as bookmarkStorage from "../utils/bookmarkStorage";
 import * as notificationStorage from "../utils/notificationStorage";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
+import { get } from "../utils/apiClient"; // Import the authenticated API client
 
 // Use the stored-notifications endpoint for fetching news
 const SERVER_URL = API.BASE_URL + API.ENDPOINTS.STORED_NOTIFICATIONS;
@@ -249,29 +250,39 @@ const LegalNewsScreen = ({ navigation }) => {
   };
 
   const fetchNews = async () => {
-    if (!refreshing) setLoading(true);
+    setLoading(true);
     setError(null);
     
     try {
-      // Always fetch all notifications at once
-      const response = await fetch(SERVER_URL);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Use the authenticated API client instead of direct fetch
+      const data = await get(API.ENDPOINTS.STORED_NOTIFICATIONS);
+      
+      if (data.success) {
+        setAllNews(data.notifications);
+        
+        // Also store locally for offline access
+        await notificationStorage.saveAllNotifications(data.notifications);
+        
+        // Apply filters to the fresh data
+        const filtered = applyFilters(data.notifications);
+        setNews(filtered);
+      } else {
+        setError(data.message || 'Fehler beim Laden der Daten');
+        
+        // Try to load from local storage if API request fails
+        const localNotifications = await notificationStorage.getAllNotifications();
+        if (localNotifications.length > 0) {
+          setAllNews(localNotifications);
+          const filtered = applyFilters(localNotifications);
+          setNews(filtered);
+          setError("Offline-Modus. Letzte bekannte Daten werden angezeigt.");
+        }
       }
-      const data = await response.json();
-      
-      // Store the original data
-      setAllNews(data.notifications);
-      
-      // Also store locally
-      await notificationStorage.saveAllNotifications(data.notifications);
-      
-      // Apply filters to the fresh data
-      const filtered = applyFilters(data.notifications);
-      setNews(filtered);
     } catch (error) {
+      setError(
+        `Verbindungsfehler: ${error.message || 'Unbekannter Fehler'}`
+      );
       console.error("Error fetching news:", error);
-      setError(error.message);
       
       // Try to load from local storage if network request fails
       const localNotifications = await notificationStorage.getAllNotifications();
@@ -289,7 +300,11 @@ const LegalNewsScreen = ({ navigation }) => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchNews();
+    try {
+      await fetchNews();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleBookmarkToggle = async (newsId) => {

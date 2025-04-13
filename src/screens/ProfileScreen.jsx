@@ -20,6 +20,7 @@ import { updateProfile, signOut } from 'firebase/auth';
 import { clearAuth } from "../utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { API } from '../constants/api';
+import { get, del } from '../utils/apiClient'; // Import the authenticated API client
 
 const ProfileScreen = ({ navigation }) => {
   const [displayName, setDisplayName] = useState('');
@@ -50,21 +51,16 @@ const ProfileScreen = ({ navigation }) => {
     
     setLoadingSubscriptions(true);
     try {
-      // Use the proper API structure from constants
-      const url = `${API.BASE_URL}/user/subscriptions/${auth.currentUser.uid}`;
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      // Use the authenticated API client
+      const data = await get(`/user/subscriptions/${auth.currentUser.uid}`);
       
       if (data.success) {
         setSubscriptions(data.subscriptions);
+      } else {
+        throw new Error(data.message || 'Failed to fetch subscriptions');
       }
     } catch (error) {
+      console.error('Error fetching subscriptions:', error);
       Alert.alert('Fehler', 'Fehler beim Laden Ihrer Abonnements');
     } finally {
       setLoadingSubscriptions(false);
@@ -88,17 +84,8 @@ const ProfileScreen = ({ navigation }) => {
           onPress: async () => {
             setRemovingSubscription(true);
             try {
-              const url = `${API.BASE_URL}/user/subscriptions/${auth.currentUser.uid}/${category}`;
-              
-              const response = await fetch(url, {
-                method: 'DELETE',
-              });
-              
-              if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status}`);
-              }
-              
-              const data = await response.json();
+              // Use the authenticated API client
+              const data = await del(`/user/subscriptions/${auth.currentUser.uid}/${category}`);
               
               if (data.success) {
                 // Remove the subscription from local state

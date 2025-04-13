@@ -1,4 +1,4 @@
-import { db } from "../../config/firebase-admin.js";
+import * as userService from '../service/userService.js';
 
 /**
  * Get all subscriptions for a specific user
@@ -13,35 +13,7 @@ export const getUserSubscriptions = async (req, res) => {
       return res.status(400).json({ error: "User ID is required" });
     }
     
-    // Get list of all categories from Firestore
-    const categoriesSnapshot = await db.collection("subscriptions").get();
-    
-    const userSubscriptions = [];
-    
-    // Check each category if the user is subscribed
-    for (const categoryDoc of categoriesSnapshot.docs) {
-      const categoryName = categoryDoc.id;
-      
-      // Check if user exists in this category
-      const userRef = db.collection("subscriptions")
-                        .doc(categoryName)
-                        .collection("users")
-                        .doc(userId);
-      
-      const userDoc = await userRef.get();
-      
-      if (userDoc.exists) {
-        userSubscriptions.push({
-          category: categoryName,
-          // Include subscription types but not the updatedAt timestamp
-          types: {
-            BR: userDoc.data().BR || false,
-            EU: userDoc.data().EU || false,
-            LR: userDoc.data().LR || false
-          }
-        });
-      }
-    }
+    const userSubscriptions = await userService.getUserSubscriptions(userId);
     
     return res.status(200).json({
       success: true,
@@ -50,7 +22,7 @@ export const getUserSubscriptions = async (req, res) => {
     
   } catch (error) {
     console.error("Error fetching user subscriptions:", error);
-    return res.status(500).json({ 
+    return res.status(error.message === "User ID is required" ? 400 : 500).json({ 
       error: "Failed to fetch user subscriptions",
       message: error.message 
     });
@@ -70,32 +42,20 @@ export const removeUserSubscription = async (req, res) => {
       return res.status(400).json({ error: "User ID and category are required" });
     }
     
-    // Reference to the user document in the specific category collection
-    const userRef = db.collection("subscriptions")
-                      .doc(category)
-                      .collection("users")
-                      .doc(userId);
+    const result = await userService.removeUserSubscription(userId, category);
     
-    // Check if the document exists
-    const userDoc = await userRef.get();
+    return res.status(200).json(result);
     
-    if (!userDoc.exists) {
+  } catch (error) {
+    console.error("Error removing user subscription:", error);
+    
+    if (error.message === "Subscription not found") {
       return res.status(404).json({ 
         success: false,
         message: "Subscription not found" 
       });
     }
     
-    // Delete the user's subscription to this category
-    await userRef.delete();
-    
-    return res.status(200).json({
-      success: true,
-      message: `Subscription to ${category} removed successfully`
-    });
-    
-  } catch (error) {
-    console.error("Error removing user subscription:", error);
     return res.status(500).json({ 
       success: false,
       error: "Failed to remove subscription",

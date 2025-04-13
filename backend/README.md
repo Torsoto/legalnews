@@ -1,107 +1,100 @@
 # LegalNews Backend
 
-Backend service for the LegalNews mobile application, providing legal news and updates from official sources in Austria.
+Backend-Service für die LegalNews-Mobilanwendung, die rechtliche Nachrichten und Updates aus offiziellen Quellen in Österreich bereitstellt.
 
-## Features
+## Funktionen
 
-- XML parsing for legal documents from the Austrian RIS (Rechtsinformationssystem)
-- Integration with Google's Gemini AI for document summarization
-- Firebase Firestore for data storage and persistence
-- RESTful API endpoints for legal notifications
+- XML-Parsing für rechtliche Dokumente vom österreichischen RIS (Rechtsinformationssystem)
+- Integration mit Google's Gemini AI zur Dokumentenzusammenfassung
+- Firebase Firestore für Datenspeicherung und -persistenz
+- RESTful API-Endpunkte für rechtliche Benachrichtigungen
 
-## Getting Started
+## Erste Schritte
 
-These instructions will help you set up and run the project locally for development.
+Diese Anweisungen helfen Ihnen, das Projekt lokal für die Entwicklung einzurichten und auszuführen.
 
-### Prerequisites
+### Voraussetzungen
 
 - Node.js 16+ 
-- npm or yarn
-- Firebase account
+- npm oder yarn
+- Firebase-Konto
 
 ### Installation
 
-1. Clone this repository
-2. Navigate to the backend directory
-3. Install dependencies:
+1. Klonen Sie dieses Repository
+2. Navigieren Sie zum Backend-Verzeichnis
+3. Installieren Sie die Abhängigkeiten:
 
 ```bash
 npm install
-# or
+# oder
 yarn install
 ```
 
-### Firebase Setup
+### Firebase-Einrichtung
 
-This project uses Firebase Admin SDK. To configure it:
+Dieses Projekt verwendet das Firebase Admin SDK. Zur Konfiguration:
 
-1. Go to the [Firebase console](https://console.firebase.google.com/)
-2. Navigate to Project Settings > Service accounts
-3. Click "Generate new private key" to download your Firebase Admin SDK private key JSON
-4. Save the downloaded file in the root directory as `serviceAccountKey.json`
+1. Gehen Sie zur [Firebase-Konsole](https://console.firebase.google.com/)
+2. Navigieren Sie zu Projekteinstellungen > Dienstkonten
+3. Klicken Sie auf "Neuen privaten Schlüssel generieren", um Ihren Firebase Admin SDK privaten Schlüssel herunterzuladen
+4. Speichern Sie die heruntergeladene Datei im Stammverzeichnis als `serviceAccountKey.json`
 
-### Environment Variables
+### Umgebungsvariablen
 
-Create a `.env` file in the backend directory with the following variables:
+Erstellen Sie eine `.env`-Datei im Backend-Verzeichnis mit den folgenden Variablen:
 
 ```
-# Google API Key for Gemini AI
-GOOGLE_API_KEY=your_google_api_key
+# Google API-Schlüssel für Gemini AI
+GOOGLE_GENAI_API_KEY=ihr_google_api_schlüssel
+# Port für den Server
+PORT=3000
 ```
 
-Replace all placeholders with your actual values.
+Ersetzen Sie alle Platzhalter durch Ihre tatsächlichen Werte.
 
-### Running the Application
+### Anwendung starten
 
-Start the development server:
+Starten Sie den Entwicklungsserver:
 
 ```bash
 npm run dev
-# or
+# oder
 yarn dev
 ```
 
-The server will run on http://localhost:3000 by default.
+Der Server läuft standardmäßig auf http://localhost:3000.
 
-## API Endpoints
+## API-Endpunkte
 
-The backend currently provides these endpoints:
+Das Backend stellt derzeit diese Endpunkte bereit:
 
-### Legal Notifications
-- `GET /api/notifications` - Fetch latest legal notifications from the Austrian RIS API
-- `GET /api/stored-notifications` - Retrieve already stored notifications from Firestore
-- `GET /api/test` - Simple test endpoint to verify API connectivity
+### Rechtliche Benachrichtigungen
+- `GET /api/notifications` - Abrufen der neuesten rechtlichen Benachrichtigungen von der österreichischen RIS-API
+- `GET /api/state-notifications` - Abrufen der neuesten Bundesland-Rechtsvorschriften
+- `GET /api/stored-notifications` - Abrufen bereits gespeicherter Benachrichtigungen aus Firestore
 
-## Project Structure
+### Benutzerverwaltung
+- `GET /api/user/subscriptions/:userId` - Benutzerabonnements abrufen
+- `DELETE /api/user/subscriptions/:userId/:category` - Ein Abonnement entfernen
 
-```
-backend/
-├── config/
-│   └── firebase-admin.js    # Firebase Admin SDK configuration
-├── src/
-│   ├── server.js            # Main server entry point
-│   ├── xmlParser.js         # XML parsing logic for legal documents
-│   ├── AI.js                # Gemini AI integration for summarization
-│   └── service/
-│       └── firestoreService.js  # Firebase Firestore operations
-├── .env                     # Environment variables
-└── package.json             # Project dependencies
-```
+### Test
+- `GET /api/test` - Einfacher Test-Endpunkt zur Überprüfung der API-Konnektivität (keine Authentifizierung erforderlich)
 
-## Error Handling
+## Fehlerbehandlung
 
-The API uses standard HTTP status codes and returns errors in the following format:
+Die API verwendet Standard-HTTP-Statuscodes und gibt Fehler im folgenden Format zurück:
 
 ```json
 {
   "success": false,
-  "error": "Error message"
+  "error": "Fehlermeldung"
 }
 ```
 
-## Response Format
+## Antwortformat
 
-Successful responses follow this format:
+Erfolgreiche Antworten haben folgendes Format:
 
 ```json
 {
@@ -111,6 +104,49 @@ Successful responses follow this format:
 }
 ```
 
-## License
+## 🔐 Authentifizierung
 
-This project is licensed under the ISC License.
+Diese API verwendet Firebase Authentication mit JWT-Tokens für die Sicherheit. Alle Endpunkte außer `/api/test` erfordern eine Authentifizierung.
+
+### Funktionsweise
+
+1. Das Frontend erhält ein Firebase ID-Token, wenn sich Benutzer anmelden
+2. Das Token wird in API-Anfragen als Authorization-Header eingefügt
+3. Das Backend verifiziert das Token mit dem Firebase Admin SDK
+4. Bei Gültigkeit wird die Anfrage fortgesetzt; andernfalls wird 401 Unauthorized zurückgegeben
+
+### API-Endpunkte testen
+
+Um die Endpunkte in Ihrem Browser oder mit API-Tools zu testen:
+
+#### Option 1: Frontend-Entwicklung
+
+1. Kommentieren Sie in der Frontend-App diese Zeile in `src/utils/auth.js` aus:
+   ```javascript
+   //console.log('Token:', token); //ONLY FOR TESTING (e.g.: browser with extenstion or postman)
+   ```
+2. Melden Sie sich in der App an und prüfen Sie die Entwicklungskonsole auf das Token
+3. Kopieren Sie das Token zur Verwendung mit den unten genannten Methoden
+
+#### Option 2: Browser-Erweiterungen
+
+1. Installieren Sie eine Header-Modifikations-Erweiterung:
+   - [ModHeader für Chrome](https://chrome.google.com/webstore/detail/modheader/idgpnmonknjnojddfkpgkljpfnnfcklj)
+   - [ModHeader für Firefox](https://addons.mozilla.org/en-US/firefox/addon/modheader-firefox/)
+
+2. Fügen Sie einen neuen Header hinzu:
+   - Name: `Authorization`
+   - Wert: `Bearer IHR_ID_TOKEN`
+
+3. Navigieren Sie zu einem API-Endpunkt in Ihrem Browser
+
+#### Option 3: Postman oder ähnliche Tools
+
+1. Erstellen Sie eine neue Anfrage in Postman
+2. Wählen Sie unter dem Tab "Authorization" den Typ "Bearer Token"
+3. Fügen Sie Ihr Token in das Token-Feld ein
+4. Senden Sie Ihre Anfrage an den gewünschten Endpunkt
+
+## Lizenz
+
+Dieses Projekt ist unter der ISC-Lizenz lizenziert.

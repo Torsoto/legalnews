@@ -7,7 +7,8 @@ const AUTH_USER_KEY = '@auth_user';
 export const persistAuth = async (user) => {
   try {
     // Store the user's ID token
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true);// Force refresh to ensure we have a fresh token
+    //console.log('Token:', token); //ONLY FOR TESTING (e.g.: browser with extenstion or postman)
     await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
     
     // Store basic user info
@@ -47,7 +48,11 @@ export const getPersistedAuth = async () => {
     
     // Verify the token is still valid
     try {
-      await auth.currentUser?.getIdToken(true);
+      if (auth.currentUser) {
+        // Refresh the token to ensure it's valid for API requests
+        const newToken = await auth.currentUser.getIdToken(true);
+        await AsyncStorage.setItem(AUTH_TOKEN_KEY, newToken);
+      }
       return JSON.parse(userData);
     } catch (error) {
       // Token is invalid or expired
@@ -56,6 +61,29 @@ export const getPersistedAuth = async () => {
     }
   } catch (error) {
     console.error('Error getting persisted auth:', error);
+    return null;
+  }
+};
+
+/**
+ * Get the current ID token for the authenticated user
+ * @param {boolean} forceRefresh - Whether to force token refresh
+ * @returns {Promise<string|null>} - The ID token or null if not authenticated
+ */
+export const getAuthToken = async (forceRefresh = false) => {
+  try {
+    // Try to get from storage first
+    let token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    
+    // If no token in storage or refresh is forced, get a new one if user is logged in
+    if ((!token || forceRefresh) && auth.currentUser) {
+      token = await auth.currentUser.getIdToken(true);
+      await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+    
+    return token;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
     return null;
   }
 }; 
