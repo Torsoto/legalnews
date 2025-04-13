@@ -211,26 +211,21 @@ const HomeScreen = ({ navigation }) => {
         return;
       }
 
-      // Create a map of jurisdictions with boolean values
-      const jurisdictionMap = {};
-      jurisdictions.forEach((jurisdiction) => {
-        jurisdictionMap[jurisdiction.id] =
-          selectedJurisdictions.includes(jurisdiction.id);
-      });
-      
-      // Create a map of Bundesländer with boolean values (if Landesrecht is selected)
-      const bundeslaenderMap = {};
-      if (isLandesrechtSelected()) {
-        bundeslaender.forEach((bundesland) => {
-          bundeslaenderMap[bundesland.id] =
-            selectedBundeslaender.includes(bundesland.id);
-        });
-      }
-
-      // Add timestamp fields
+      // Create subscription data with new structure
       const subscriptionData = {
-        ...jurisdictionMap,
-        bundeslaender: isLandesrechtSelected() ? bundeslaenderMap : {},
+        // Basic jurisdictions
+        BR: selectedJurisdictions.includes("BR"),
+        EU: selectedJurisdictions.includes("EU"),
+        
+        // LR is now a map containing all selected Bundesländer
+        LR: selectedJurisdictions.includes("LR") 
+          ? bundeslaender.reduce((map, bundesland) => {
+              map[bundesland.id] = selectedBundeslaender.includes(bundesland.id);
+              return map;
+            }, {})
+          : false,
+        
+        // Add timestamp field
         updatedAt: new Date().toISOString(),
       };
 
