@@ -28,8 +28,10 @@ app.listen(port, "0.0.0.0", () => {
   console.log(`Server running on http://localhost:${port}`);
   console.log(`Available endpoints:`);
   console.log(`- GET /api/notifications - Fetch latest legal notifications from Austrian RIS`);
+  console.log(`- GET /api/state-notifications - Fetch latest state legal notifications from Austrian RIS`);
   console.log(`- GET /api/stored-notifications - Retrieve stored notifications from Firestore`);
   console.log(`- GET /api/test - Test API connectivity`);
+
 });
 
 // Handle unhandled promise rejections

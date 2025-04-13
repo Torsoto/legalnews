@@ -11,6 +11,13 @@ const router = Router();
 router.get('/notifications', notificationController.getLatestNotifications);
 
 /**
+ * @route   GET /api/state-notifications
+ * @desc    Fetch latest state legal notifications from RIS API
+ * @access  Public
+ */
+router.get('/state-notifications', notificationController.getStateNotifications);
+
+/**
  * @route   GET /api/stored-notifications
  * @desc    Retrieve stored notifications from Firestore
  * @access  Public

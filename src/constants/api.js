@@ -10,6 +10,7 @@ export const API = {
   // Endpoints
   ENDPOINTS: {
     NOTIFICATIONS: "/notifications",
+    STATE_NOTIFICATIONS: "/state-notifications",
     STORED_NOTIFICATIONS: "/stored-notifications",
     TEST: "/test",
   },

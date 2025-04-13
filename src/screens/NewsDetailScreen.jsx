@@ -222,14 +222,15 @@ const NewsDetailScreen = ({ route, navigation }) => {
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            className="p-1"
+            className="p-1 flex-row items-center"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="arrow-back" size={22} color="#2196F3" />
+            <Text className="text-primary ml-1 text-sm">Zurück</Text>
           </TouchableOpacity>
           
           <Text className="flex-1 text-center text-lg font-semibold text-gray-800" numberOfLines={1}>
-            {newsItem.title.length > 30 ? newsItem.title.substring(0, 30) + '...' : newsItem.title}
+            {newsItem.title.length > 25 ? newsItem.title.substring(0, 25) + '...' : newsItem.title}
           </Text>
           
           <View className="flex-row items-center">

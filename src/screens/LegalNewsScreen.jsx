@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -14,10 +14,13 @@ import {
   ScrollView,
   TextInput,
   Modal,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API } from "../constants";
 import * as bookmarkStorage from "../utils/bookmarkStorage";
+import * as notificationStorage from "../utils/notificationStorage";
+import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 
 // Use the stored-notifications endpoint for fetching news
 const SERVER_URL = API.BASE_URL + API.ENDPOINTS.STORED_NOTIFICATIONS;
@@ -52,7 +55,7 @@ const EmptyNewsState = ({ loading, error, onRetry }) => (
   </View>
 );
 
-const NewsCard = ({ item, onPress, isBookmarked, onBookmarkToggle, showNotificationBadge = false }) => {
+const NewsCard = ({ item, onPress, isBookmarked, onBookmarkToggle, showNotificationBadge = false, onDelete, isInNotificationsTab, isRead }) => {
   const [scaleAnimation] = useState(new Animated.Value(1));
   
   // Animation when bookmarking
@@ -84,78 +87,107 @@ const NewsCard = ({ item, onPress, isBookmarked, onBookmarkToggle, showNotificat
   };
 
   return (
-    <TouchableOpacity 
-      className="mb-4 mx-3 bg-white rounded-xl shadow-sm overflow-hidden"
-      style={{ 
-        elevation: 3,
-        backgroundColor: !item.isRead && showNotificationBadge ? "#EBF5FF" : "white"
-      }}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      {/* Card Header */}
-      <View className="p-4">
-        <View className="flex-row justify-between items-start">
-          <View className="flex-1 pr-3">
-            <Text className="text-lg font-bold text-gray-800 mb-2">
-              {item.title}
-            </Text>
-            <Text 
-              className="text-gray-600"
-              numberOfLines={2}
-            >
-              {item.description}
-            </Text>
+    <View className="mx-3">
+      <TouchableOpacity 
+        className="mb-4 bg-white shadow-sm overflow-hidden"
+        style={{ 
+          elevation: 3,
+          backgroundColor: !isRead && showNotificationBadge && isInNotificationsTab ? "#EBF5FF" : "white"
+        }}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        {/* Card Header */}
+        <View className="p-4">
+          <View className="flex-row justify-between items-start">
+            <View className="flex-1 pr-3">
+              <Text className="text-lg font-bold text-gray-800 mb-2">
+                {item.title}
+              </Text>
+              <Text 
+                className="text-gray-600"
+                numberOfLines={2}
+              >
+                {item.description}
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+              {/* Delete button - only shown in notifications tab */}
+              {isInNotificationsTab && (
+                <TouchableOpacity
+                  onPress={() => onDelete(item.id)}
+                  className="p-1 mr-2"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={22}
+                    color="#FF4136"
+                  />
+                </TouchableOpacity>
+              )}
+              {/* Bookmark button */}
+              <Animated.View style={{ transform: [{ scale: scaleAnimation }] }}>
+                <TouchableOpacity
+                  onPress={() => onBookmarkToggle(item.id)}
+                  className="p-1"
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                    size={24}
+                    color={isBookmarked ? '#4CAF50' : '#666'}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
           </View>
-          <Animated.View style={{ transform: [{ scale: scaleAnimation }] }}>
-            <TouchableOpacity
-              onPress={() => onBookmarkToggle(item.id)}
-              className="p-1"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons
-                name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
-                size={24}
-                color={isBookmarked ? '#4CAF50' : '#666'}
-              />
-            </TouchableOpacity>
-          </Animated.View>
+          
+          {/* Tags and Date */}
+          <View className="flex-row flex-wrap mt-3">
+            {item.category && (
+              <View className="bg-blue-50 px-3 py-1 rounded-full mr-2 mb-1 border border-blue-100">
+                <Text className="text-xs text-blue-700 font-medium">
+                  {item.category}
+                </Text>
+              </View>
+            )}
+            {item.jurisdiction && (
+              <View className="bg-green-50 px-3 py-1 rounded-full mr-2 mb-1 border border-green-100">
+                <Text className="text-xs text-green-700 font-medium">
+                  {item.jurisdiction === 'BR' ? 'Bundesrecht' : 
+                  item.jurisdiction === 'LR' ? 'Landesrecht' : 
+                  item.jurisdiction === 'EU' ? 'EU-Recht' : item.jurisdiction}
+                </Text>
+              </View>
+            )}
+            {item.jurisdiction === 'LR' && item.bundesland && (
+              <View className="bg-purple-50 px-3 py-1 rounded-full mr-2 mb-1 border border-purple-100">
+                <Text className="text-xs text-purple-700 font-medium">
+                  {item.bundesland}
+                </Text>
+              </View>
+            )}
+            <View className="bg-gray-100 px-3 py-1 rounded-full mb-1 border border-gray-200">
+              <Text className="text-xs text-gray-700 font-medium">
+                {formatDate(item.publicationDate)}
+              </Text>
+            </View>
+          </View>
         </View>
         
-        {/* Tags and Date */}
-        <View className="flex-row flex-wrap mt-3">
-          {item.category && (
-            <View className="bg-blue-50 px-3 py-1 rounded-full mr-2 mb-1 border border-blue-100">
-              <Text className="text-xs text-blue-700 font-medium">
-                {item.category}
-              </Text>
-            </View>
-          )}
-          {item.jurisdiction && (
-            <View className="bg-green-50 px-3 py-1 rounded-full mr-2 mb-1 border border-green-100">
-              <Text className="text-xs text-green-700 font-medium">
-                {item.jurisdiction}
-              </Text>
-            </View>
-          )}
-          <View className="bg-gray-100 px-3 py-1 rounded-full mb-1 border border-gray-200">
-            <Text className="text-xs text-gray-700 font-medium">
-              {formatDate(item.publicationDate)}
-            </Text>
-          </View>
+        {/* Card Footer with preview indicator */}
+        <View className="bg-gray-50 py-2 px-4 border-t border-gray-200 flex-row justify-between items-center">
+          <Text className="text-sm text-primary font-medium">Mehr anzeigen</Text>
+          <Ionicons name="chevron-forward" size={16} color="#2196F3" />
         </View>
-      </View>
-      
-      {/* Card Footer with preview indicator */}
-      <View className="bg-gray-50 py-2 px-4 border-t border-gray-200 flex-row justify-between items-center">
-        <Text className="text-sm text-primary font-medium">Mehr anzeigen</Text>
-        <Ionicons name="chevron-forward" size={16} color="#2196F3" />
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const LegalNewsScreen = ({ navigation }) => {
+  const [allNews, setAllNews] = useState([]);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -167,25 +199,49 @@ const LegalNewsScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [tabView, setTabView] = useState('all'); // 'all' or 'notifications'
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sortAscending, setSortAscending] = useState(false); // false = newest first (descending)
+  const [deletedNotifications, setDeletedNotifications] = useState({});
+  const [readNotifications, setReadNotifications] = useState({});
 
-  // Load bookmarks and news on mount
+  // Load bookmarks, notifications and news on mount
   useEffect(() => {
-    loadBookmarks();
-    fetchNews();
+    const loadData = async () => {
+      await loadBookmarks();
+      await loadNotificationStatus();
+      fetchNews();
+    };
+    
+    loadData();
 
     // Add a listener for when the screen is focused
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadBookmarks();
+    const unsubscribe = navigation.addListener('focus', async () => {
+      await loadBookmarks();
+      await loadNotificationStatus();
     });
 
     return unsubscribe;
   }, [navigation]);
 
+  // Apply filters whenever dependencies change
+  useEffect(() => {
+    if (allNews.length > 0) {
+      const filtered = applyFilters(allNews);
+      setNews(filtered);
+    }
+  }, [selectedFilter, searchQuery, searchActive, tabView, sortAscending, bookmarkedNews, deletedNotifications, readNotifications]);
+
   // Count unread notifications
   useEffect(() => {
-    const count = news.filter(item => !item.isRead).length;
+    const count = news.filter(item => !readNotifications[item.id] && !deletedNotifications[item.id]).length;
     setUnreadCount(count);
-  }, [news]);
+  }, [news, deletedNotifications, readNotifications]);
+
+  const loadNotificationStatus = async () => {
+    const deleted = await notificationStorage.getDeletedNotifications();
+    const read = await notificationStorage.getReadNotifications();
+    setDeletedNotifications(deleted);
+    setReadNotifications(read);
+  };
 
   const loadBookmarks = async () => {
     const bookmarks = await bookmarkStorage.getBookmarks();
@@ -197,23 +253,34 @@ const LegalNewsScreen = ({ navigation }) => {
     setError(null);
     
     try {
+      // Always fetch all notifications at once
       const response = await fetch(SERVER_URL);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       
-      // Process and sort news by date (newest first)
-      const processedNews = data.notifications.sort((a, b) => {
-        const dateA = new Date(a.publicationDate || 0);
-        const dateB = new Date(b.publicationDate || 0);
-        return dateB - dateA;
-      });
-
-      setNews(processedNews);
+      // Store the original data
+      setAllNews(data.notifications);
+      
+      // Also store locally
+      await notificationStorage.saveAllNotifications(data.notifications);
+      
+      // Apply filters to the fresh data
+      const filtered = applyFilters(data.notifications);
+      setNews(filtered);
     } catch (error) {
       console.error("Error fetching news:", error);
       setError(error.message);
+      
+      // Try to load from local storage if network request fails
+      const localNotifications = await notificationStorage.getAllNotifications();
+      if (localNotifications.length > 0) {
+        setAllNews(localNotifications);
+        const filtered = applyFilters(localNotifications);
+        setNews(filtered);
+        setError("Offline-Modus. Letzte bekannte Daten werden angezeigt.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -234,15 +301,31 @@ const LegalNewsScreen = ({ navigation }) => {
     }));
   };
 
-  const navigateToNewsDetail = (newsItem) => {
+  const handleDeleteNotification = async (newsId) => {
+    await notificationStorage.deleteNotification(newsId);
+    setDeletedNotifications(prev => ({
+      ...prev,
+      [newsId]: true
+    }));
+  };
+
+  const navigateToNewsDetail = async (newsItem) => {
     // Mark as read
-    if (!newsItem.isRead) {
-      setNews(prev => prev.map(item => 
-        item.id === newsItem.id ? { ...item, isRead: true } : item
-      ));
+    if (!readNotifications[newsItem.id]) {
+      await notificationStorage.markAsRead(newsItem.id);
+      setReadNotifications(prev => ({
+        ...prev,
+        [newsItem.id]: true
+      }));
     }
+    
     // Navigate to the NewsDetailScreen with the selected news item
-    navigation.navigate("NewsDetail", { newsItem: { ...newsItem, isRead: true }});
+    navigation.navigate("NewsDetail", { 
+      newsItem: { 
+        ...newsItem, 
+        isRead: true 
+      }
+    });
   };
 
   const toggleFilter = (filter) => {
@@ -262,29 +345,50 @@ const LegalNewsScreen = ({ navigation }) => {
     }
   };
 
-  const markAllAsRead = () => {
-    setNews(prev => prev.map(item => ({ ...item, isRead: true })));
+  const toggleSortOrder = () => {
+    setSortAscending(prev => !prev);
   };
 
-  const getFilteredNews = () => {
-    let filteredItems = news;
+  const markAllAsRead = async () => {
+    const unreadIds = news
+      .filter(item => !readNotifications[item.id])
+      .map(item => item.id);
+      
+    await notificationStorage.markAllAsRead(unreadIds);
+    
+    // Update local state
+    const newReadState = { ...readNotifications };
+    unreadIds.forEach(id => {
+      newReadState[id] = true;
+    });
+    
+    setReadNotifications(newReadState);
+  };
+
+  // Apply all active filters to the news array and sort
+  const applyFilters = (newsArray) => {
+    let filteredItems = [...newsArray];
     
     // Apply tab filter
     if (tabView === 'notifications') {
-      filteredItems = filteredItems.filter(item => !item.isRead);
-    }
+      // For notifications tab, show only unread AND not deleted
+      filteredItems = filteredItems.filter(item => 
+        !readNotifications[item.id] && !deletedNotifications[item.id]
+      );
+    } 
+    // We don't filter out deleted items in "all" tab
     
     // Apply other filters
     if (filterActive && selectedFilter) {
       filteredItems = filteredItems.filter(item => {
         if (selectedFilter === 'bookmark') {
           return bookmarkedNews[item.id];
-        } else if (selectedFilter === 'federal') {
-          return item.jurisdiction === 'Bundesrecht';
+        } else if (selectedFilter === 'BR') {
+          return item.jurisdiction === 'BR';
         } else if (selectedFilter === 'EU') {
-          return item.jurisdiction === 'EU-Recht';
-        } else if (selectedFilter === 'state') {
-          return item.jurisdiction === 'Landesrecht';
+          return item.jurisdiction === 'EU';
+        } else if (selectedFilter === 'LR') {
+          return item.jurisdiction === 'LR';
         }
         return true;
       });
@@ -297,9 +401,17 @@ const LegalNewsScreen = ({ navigation }) => {
         (item.title && item.title.toLowerCase().includes(query)) ||
         (item.description && item.description.toLowerCase().includes(query)) ||
         (item.category && item.category.toLowerCase().includes(query)) ||
-        (item.jurisdiction && item.jurisdiction.toLowerCase().includes(query))
+        (item.jurisdiction && item.jurisdiction.toLowerCase().includes(query)) ||
+        (item.bundesland && item.bundesland.toLowerCase().includes(query))
       );
     }
+    
+    // Sort by date
+    filteredItems.sort((a, b) => {
+      const dateA = new Date(a.publicationDate || 0);
+      const dateB = new Date(b.publicationDate || 0);
+      return sortAscending ? dateA - dateB : dateB - dateA;
+    });
     
     return filteredItems;
   };
@@ -326,22 +438,22 @@ const LegalNewsScreen = ({ navigation }) => {
         
         <TouchableOpacity
           className={`px-4 py-2 rounded-full mr-2 flex-row items-center ${
-            selectedFilter === 'federal' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-200'
+            selectedFilter === 'BR' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-200'
           }`}
-          onPress={() => toggleFilter('federal')}
+          onPress={() => toggleFilter('BR')}
         >
-          <Text className={`text-sm ${selectedFilter === 'federal' ? 'text-blue-800' : 'text-gray-700'}`}>
+          <Text className={`text-sm ${selectedFilter === 'BR' ? 'text-blue-800' : 'text-gray-700'}`}>
             Bundesrecht
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           className={`px-4 py-2 rounded-full mr-2 flex-row items-center ${
-            selectedFilter === 'state' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-200'
+            selectedFilter === 'LR' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-200'
           }`}
-          onPress={() => toggleFilter('state')}
+          onPress={() => toggleFilter('LR')}
         >
-          <Text className={`text-sm ${selectedFilter === 'state' ? 'text-blue-800' : 'text-gray-700'}`}>
+          <Text className={`text-sm ${selectedFilter === 'LR' ? 'text-blue-800' : 'text-gray-700'}`}>
             Landesrecht
           </Text>
         </TouchableOpacity>
@@ -426,78 +538,115 @@ const LegalNewsScreen = ({ navigation }) => {
     );
   }
 
-  const filteredNews = getFilteredNews();
-
   return (
-    <SafeAreaView
-      className="flex-1 bg-white"
-      style={{
-        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-      }}
-    >
-      {/* Header with title */}
-      <View className="bg-white shadow-sm border-b border-gray-100">
-        <View className="flex-row justify-between items-center pt-2 pb-3 px-4">
-          <Text className="text-xl font-bold text-gray-800">Rechtsnews</Text>
-          <View className="flex-row">
-            {tabView === 'notifications' && unreadCount > 0 && (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView
+        className="flex-1 bg-white"
+        style={{
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+        }}
+      >
+        {/* Header with title */}
+        <View className="bg-white shadow-sm border-b border-gray-100">
+          <View className="flex-row justify-between items-center pt-2 pb-3 px-4">
+            <Text className="text-xl font-bold text-gray-800">Rechtsnews</Text>
+            <View className="flex-row">
+              {tabView === 'notifications' && (
+                <>
+                  {unreadCount > 0 && (
+                    <TouchableOpacity 
+                      className="mr-4 p-2"
+                      onPress={markAllAsRead}
+                    >
+                      <Text className="text-primary text-sm font-medium">Alle gelesen</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity 
+                    className="mr-4 p-2 bg-blue-100 rounded-lg"
+                    onPress={async () => {
+                      // Reset read status and deleted notifications for testing
+                      await notificationStorage.clearAllNotificationData();
+                      
+                      // Reset state first
+                      setReadNotifications({});
+                      setDeletedNotifications({});
+                      
+                      // Then fetch new data
+                      await fetchNews();
+                      
+                      // Force a re-filter of notifications to show them immediately 
+                      const filtered = applyFilters(allNews);
+                      setNews(filtered);
+                    }}
+                  >
+                    <Text className="text-primary text-sm font-medium">Test Refresh</Text>
+                  </TouchableOpacity>
+                </>
+              )}
               <TouchableOpacity 
-                className="mr-4 p-2"
-                onPress={markAllAsRead}
+                onPress={toggleSortOrder}
+                className="p-2 mr-1"
               >
-                <Text className="text-primary text-sm font-medium">Alle gelesen</Text>
+                <Ionicons 
+                  name={sortAscending ? "arrow-up" : "arrow-down"} 
+                  size={22} 
+                  color="#2196F3" 
+                />
               </TouchableOpacity>
-            )}
-            <TouchableOpacity 
-              onPress={toggleSearch}
-              className="p-2"
-            >
-              <Ionicons name={searchActive ? "close" : "search-outline"} size={22} color="#2196F3" />
-            </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={toggleSearch}
+                className="p-2"
+              >
+                <Ionicons name={searchActive ? "close" : "search-outline"} size={22} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
           </View>
+          
+          {/* Search bar */}
+          {searchActive && renderSearchBar()}
+          
+          {/* Tab selector */}
+          {!searchActive && renderTabSelector()}
         </View>
-        
-        {/* Search bar */}
-        {searchActive && renderSearchBar()}
-        
-        {/* Tab selector */}
-        {!searchActive && renderTabSelector()}
-      </View>
 
-      {/* Filter chips */}
-      {!searchActive && renderFilterChips()}
+        {/* Filter chips */}
+        {!searchActive && renderFilterChips()}
 
-      {/* News List */}
-      {filteredNews.length > 0 ? (
-        <FlatList
-          data={filteredNews}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <NewsCard
-              item={item}
-              onPress={() => navigateToNewsDetail(item)}
-              isBookmarked={bookmarkedNews[item.id]}
-              onBookmarkToggle={handleBookmarkToggle}
-              showNotificationBadge={tabView === 'notifications' || !item.isRead}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#2196F3"]}
-            />
-          }
-          contentContainerStyle={{ paddingVertical: 8 }}
-        />
-      ) : (
-        <EmptyNewsState 
-          loading={loading} 
-          error={error} 
-          onRetry={fetchNews}
-        />
-      )}
-    </SafeAreaView>
+        {/* News List */}
+        {news.length > 0 ? (
+          <FlatList
+            data={news}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <NewsCard
+                item={item}
+                onPress={() => navigateToNewsDetail(item)}
+                isBookmarked={bookmarkedNews[item.id]}
+                onBookmarkToggle={handleBookmarkToggle}
+                showNotificationBadge={tabView === 'notifications' || !readNotifications[item.id]}
+                onDelete={handleDeleteNotification}
+                isInNotificationsTab={tabView === 'notifications'}
+                isRead={readNotifications[item.id]}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#2196F3"]}
+              />
+            }
+            contentContainerStyle={{ paddingVertical: 8 }}
+          />
+        ) : (
+          <EmptyNewsState 
+            loading={loading} 
+            error={error} 
+            onRetry={fetchNews}
+          />
+        )}
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 

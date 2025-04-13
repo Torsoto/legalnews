@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BOOKMARKS_STORAGE_KEY = '@LegalNews:bookmarks';
+export const BOOKMARKS_STORAGE_KEY = '@LegalNews:bookmarks';
 
 /**
  * Get all bookmarked notifications
