@@ -18,8 +18,18 @@ function sanitizeDocId(id) {
     const number = match[2];
     const year = match[3];
     
-    // Format as bgbl-102025 (for BGBl. I Nr. 10/2025)
-    return `bgbl-${type === 'i' ? '' : type}${number}${year}`;
+    // Format as bgbl-i-10-2025 (for BGBl. I Nr. 10/2025)
+    return `bgbl-${type}-${number}-${year}`;
+  }
+  
+  // Alternative format handling for BGBLA_YEAR_TYPE_NUMBER
+  const altMatch = id.match(/BGBLA_(\d+)_(\w+)_(\d+)/i);
+  if (altMatch) {
+    const year = altMatch[1];
+    const type = altMatch[2].toLowerCase();
+    const number = altMatch[3];
+    
+    return `bgbl-${type}-${number}-${year}`;
   }
   
   // Fallback sanitization for other formats
@@ -58,6 +68,21 @@ export async function saveNotifications(notifications) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      
+      // Convert complex objects to strings if needed
+      if (notificationWithTimestamp.articles && notificationWithTimestamp.articles.length > 0) {
+        notificationWithTimestamp.articles = notificationWithTimestamp.articles.map(article => {
+          if (typeof article === 'object') return article;
+          return JSON.parse(article);
+        });
+      }
+      
+      if (notificationWithTimestamp.changes && notificationWithTimestamp.changes.length > 0) {
+        notificationWithTimestamp.changes = notificationWithTimestamp.changes.map(change => {
+          if (typeof change === 'object') return change;
+          return JSON.parse(change);
+        });
+      }
       
       // Add to batch - use set with merge to update existing documents
       batch.set(docRef, notificationWithTimestamp, { merge: true });
@@ -131,6 +156,7 @@ export async function getAllNotifications(limit = 50) {
       .get();
     
     if (snapshot.empty) {
+      console.log('No notifications found in Firestore');
       return [];
     }
     

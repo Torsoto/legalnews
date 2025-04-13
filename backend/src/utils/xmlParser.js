@@ -10,7 +10,7 @@ class BgblXmlParser {
       attributeNamePrefix: "@_",
       removeNSPrefix: false,
       isArray: (name) => {
-        return ['ueberschrift', 'absatz', 'liste', 'aufzaehlung', 'listelem'].includes(name);
+        return ['ueberschrift', 'absatz', 'liste', 'aufzaehlung', 'listelem', 'inhaltsvz', 'table', 'tr', 'td', 'n'].includes(name);
       }
     });
   }
@@ -21,6 +21,7 @@ class BgblXmlParser {
    * @returns {string} - The processed text content
    */
   processTextContent(element) {
+    // Handle simple text content
     if (element['#text'] !== undefined && element['#text'] !== null) {
       // Convert to string if necessary
       if (typeof element['#text'] !== 'string') {
@@ -31,6 +32,25 @@ class BgblXmlParser {
     if (typeof element === 'string') {
       return element.trim();
     }
+    
+    // Handle elements with nested <n> tags
+    if (element.n) {
+      const mainText = element['#text'] || '';
+      const nElements = Array.isArray(element.n) ? element.n : [element.n];
+      
+      // Reconstruct the text with <n> elements inline
+      let fullText = mainText;
+      
+      for (const n of nElements) {
+        const nText = this.processTextContent(n);
+        if (nText) {
+          fullText += ' "' + nText + '" ';
+        }
+      }
+      
+      return fullText.replace(/\s+/g, ' ').trim();
+    }
+    
     return '';
   }
 
@@ -99,29 +119,16 @@ class BgblXmlParser {
       
       if (!abschnitt) {
         console.error(`[${metadata.Bgblnummer}] No abschnitt found in XML`);
-        notification.articles.push({
-          id: 'art-1',
-          title: 'Keine Inhalte gefunden',
-          subtitle: ''
-        });
         return notification;
       }
 
-      // Extract articles (titles and subtitles)
+      // Extract articles (titles and subtitles) if they exist
+      if (abschnitt.ueberschrift) {
       this.extractArticles(abschnitt, notification);
+      }
       
       // Extract all changes
-      this.extractChanges(abschnitt, notification);
-      
-      // If no articles were found, create a default one
-      if (notification.articles.length === 0) {
-        console.warn(`[${metadata.Bgblnummer}] No articles extracted, creating default article`);
-        notification.articles.push({
-          id: 'art-1',
-          title: 'Änderungen',
-          subtitle: metadata.Titel
-        });
-      }
+      this.extractChanges(xmlData, notification);
 
       return notification;
     } catch (error) {
@@ -132,11 +139,7 @@ class BgblXmlParser {
         description: `Error parsing XML: ${error.message}`,
         publicationDate: metadata.Ausgabedatum,
         isRead: false,
-        articles: [{
-          id: 'art-error',
-          title: 'Error',
-          subtitle: 'Failed to parse document'
-        }],
+        articles: [],
         changes: [],
         category: "Bundesrecht",
         jurisdiction: "BR",
@@ -159,19 +162,29 @@ class BgblXmlParser {
     
     let articleTitles = [];
     
-    // First pass - identify article titles (g1 headers)
+    // First pass - identify actual article titles 
+    // These should contain "Artikel" or similar patterns
     for (let i = 0; i < allHeaders.length; i++) {
       const header = allHeaders[i];
       const typ = header['@_typ'] || '';
       const text = this.processTextContent(header);
       
-      if (typ === 'g1') {
+      // Check if this is a g1 header AND matches article pattern
+      if (typ === 'g1' && (
+          /^artikel\s+\d+/i.test(text) || // "Artikel 1", etc.
+          /^art\.\s+\d+/i.test(text)    // "Art. 1", etc.
+        )) {
         articleTitles.push({
           title: text,
           subtitle: '',
           index: i
         });
       }
+    }
+    
+    // If no actual articles were found, return early
+    if (articleTitles.length === 0) {
+      return;
     }
     
     // Second pass - identify subtitles (g2 headers that follow g1)
@@ -196,127 +209,440 @@ class BgblXmlParser {
   }
   
   /**
+   * Processes an absatz element with nested <n> tags
+   * @param {Object} absatz - The absatz element to process
+   * @returns {string} - The processed text
+   */
+  processAbsatzWithN(absatz) {
+    if (!absatz || !absatz.n) return '';
+    
+    // Get the main text and all <n> elements
+    let mainText = absatz['#text'] || '';
+    const nElements = Array.isArray(absatz.n) ? absatz.n : [absatz.n];
+    
+    // Clean up the main text
+    mainText = mainText.replace(/\n/g, ' ').trim();
+    
+    // Process each <n> element and add its content to the text
+    for (let i = 0; i < nElements.length; i++) {
+      const nText = this.processTextContent(nElements[i]);
+      if (nText) {
+        // Find the position in the main text where this <n> appears
+        if (i === 0 && mainText.includes('die Wendung')) {
+          mainText = mainText.replace('die Wendung', `die Wendung "` + nText + `"`);
+        } else if (i === 1 && mainText.includes('das Wort')) {
+          mainText = mainText.replace('das Wort', `das Wort "` + nText + `"`);
+        } else if (i === 2 && mainText.includes('die Wendung')) {
+          mainText = mainText.replace(/die Wendung(?!.*die Wendung)/, `die Wendung "` + nText + `"`);
+        } else {
+          // Generic fallback if specific patterns aren't found
+          mainText += ` "` + nText + `"`;
+        }
+      }
+    }
+    
+    return mainText.replace(/\s+/g, ' ').trim();
+  }
+  
+  /**
+   * Processes a zitat element and its content
+   * @param {Object} zitat - The zitat to process
+   * @returns {string} - The processed text
+   */
+  processZitatContent(zitat) {
+    if (!zitat) return '';
+    
+    // First get the direct text content
+    let content = this.processTextContent(zitat);
+    
+    // Handle nested absatz elements within zitat
+    if (zitat.absatz) {
+      const absatzArray = Array.isArray(zitat.absatz) ? zitat.absatz : [zitat.absatz];
+      for (const absatz of absatzArray) {
+        const absatzText = this.processTextContent(absatz);
+        if (absatzText) {
+          content += '\n' + absatzText;
+        }
+      }
+    }
+    
+    return content;
+  }
+  
+  /**
    * Extract all changes from the document
-   * @param {Object} abschnitt - The section to extract changes from
+   * @param {Object} xmlData - The complete XML data
    * @param {Object} notification - The notification object to update
    */
-  extractChanges(abschnitt, notification) {
-    // First try to extract changes from novao1/novao2 paragraphs
-    this.extractChangesFromNovao(abschnitt, notification);
+  extractChanges(xmlData, notification) {
+    const nutzdaten = xmlData['risdok'] && xmlData['risdok']['nutzdaten'];
+    if (!nutzdaten) return;
     
-    // If no changes were found, try to extract them from numbered paragraphs
-    if (notification.changes.length === 0) {
-      this.extractChangesFromNumberedParagraphs(abschnitt, notification);
+    // First extract all content in order
+    const allContent = [];
+    this.extractContent(nutzdaten, allContent);
+    
+    // Then find all nova elements
+    let allChanges = [];
+    this.findNovaElements(nutzdaten, allChanges);
+    
+    // Process all changes
+    let changeNumber = 1;
+    
+    for (let i = 0; i < allChanges.length; i++) {
+      const change = allChanges[i];
+      const isLastChange = i === allChanges.length - 1;
+      
+      if (change.type === 'novao1' || change.type === 'nova1') {
+        // Look for content between this change and the next one
+        const changeIndex = allContent.findIndex(item => 
+          item.type === 'absatz' && 
+          (item.subtype === 'novao1' || item.subtype === 'nova1' || 
+           item.subtype === 'novao2' || item.subtype === 'nova2') && 
+          item.text === change.text
+        );
+        
+        let contentItems = [];
+        
+        if (changeIndex !== -1) {
+          // Find the next change in allContent
+          let nextChangeIndex = -1;
+          
+          for (let j = changeIndex + 1; j < allContent.length; j++) {
+            const item = allContent[j];
+            if (item.type === 'absatz' && 
+               (item.subtype === 'novao1' || item.subtype === 'nova1' || 
+                item.subtype === 'novao2' || item.subtype === 'nova2')) {
+              nextChangeIndex = j;
+              break;
+            }
+          }
+          
+          // Collect all content between this change and the next
+          const endIndex = nextChangeIndex !== -1 ? nextChangeIndex : allContent.length;
+          
+          for (let j = changeIndex + 1; j < endIndex; j++) {
+            const item = allContent[j];
+            if (item.text) {
+              contentItems.push(item.text);
+            }
+          }
+        }
+        
+        // Also check for zitat in the element
+        if (change.element && change.element.zitat) {
+          const zitatText = this.processZitatContent(change.element.zitat);
+          if (zitatText) {
+            contentItems.push(zitatText);
+          }
+        }
+        
+        // Add it as a change with its content
+        notification.changes.push({
+          id: `change-${changeNumber++}`,
+          title: change.text,
+          change: contentItems.join('\n')
+        });
+      } 
+      else if (change.type === 'novao2' || change.type === 'nova2') {
+        // For novao2, look for any following content
+        let contentItems = [];
+        
+        // Check if this novao2 is followed by content like a zitat
+        if (change.element && change.element.zitat) {
+          const zitatText = this.processZitatContent(change.element.zitat);
+          if (zitatText) {
+            contentItems.push(zitatText);
+          }
+        }
+        
+        // Also check if this is the last change before a specific content section
+        if (!isLastChange) {
+          const nextChange = allChanges[i + 1];
+          
+          // Look for content between this change and the next
+          const changeIndex = allContent.findIndex(item => 
+            item.type === 'absatz' && 
+            (item.subtype === 'novao2' || item.subtype === 'nova2') && 
+            item.text === change.text
+          );
+          
+          if (changeIndex !== -1) {
+            const nextChangeIndex = allContent.findIndex(item => 
+              item.type === 'absatz' && 
+              ((item.subtype === 'novao1' && nextChange.type === 'novao1') || 
+               (item.subtype === 'nova1' && nextChange.type === 'nova1') ||
+               (item.subtype === 'novao2' && nextChange.type === 'novao2') ||
+               (item.subtype === 'nova2' && nextChange.type === 'nova2')) && 
+              item.text === nextChange.text
+            );
+            
+            if (nextChangeIndex !== -1 && nextChangeIndex > changeIndex) {
+              // There's content between this change and the next
+              for (let j = changeIndex + 1; j < nextChangeIndex; j++) {
+                const item = allContent[j];
+                if (item.text && item.type !== 'absatz') {
+                  contentItems.push(item.text);
+                }
+              }
+            }
+          }
+        }
+        
+        notification.changes.push({
+          id: `change-${changeNumber++}`,
+          title: change.text,
+          change: contentItems.join('\n')
+        });
+      }
     }
   }
   
   /**
-   * Extract changes from novao1/novao2 type paragraphs
-   * @param {Object} abschnitt - The section to extract from
-   * @param {Object} notification - The notification object to update
+   * Find all novao/nova elements in the XML
+   * @param {Object} element - The element to search in
+   * @param {Array} changes - Array to collect found changes
    */
-  extractChangesFromNovao(abschnitt, notification) {
-    if (!abschnitt.absatz) return;
+  findNovaElements(element, changes) {
+    if (!element) return;
     
-    const allParagraphs = Array.isArray(abschnitt.absatz) 
-      ? abschnitt.absatz 
-      : [abschnitt.absatz];
-    
-    let currentChange = null;
-    let changeNumber = 1;
-    
-    for (const absatz of allParagraphs) {
-      const typ = absatz['@_typ'] || '';
-      const text = this.processTextContent(absatz);
+    // Check if this element is an absatz with novao/nova type
+    if (element.absatz) {
+      const absatzArray = Array.isArray(element.absatz) ? element.absatz : [element.absatz];
       
-      // Process tables
-      if (absatz.table) {
-        this.processTableContent(absatz.table, notification);
-        continue;
+      for (const absatz of absatzArray) {
+        const typ = absatz['@_typ'] || '';
+        
+        if (typ === 'novao1' || typ === 'nova1') {
+          // Standard novao1 handling
+          changes.push({
+            type: typ,
+            text: this.processTextContent(absatz),
+            element: absatz  // Store the original element for later
+          });
+        } 
+        else if ((typ === 'novao2' || typ === 'nova2') && absatz.n) {
+          // Special handling for novao2 with nested <n> tags
+          changes.push({
+            type: typ,
+            text: this.processAbsatzWithN(absatz),
+            element: absatz
+          });
+        }
+        else if (typ === 'novao2' || typ === 'nova2') {
+          // Standard novao2 handling
+          changes.push({
+            type: typ,
+            text: this.processTextContent(absatz),
+            element: absatz
+          });
+        }
+        
+        // Recursively search in nested elements
+        this.findNovaElements(absatz, changes);
       }
-      
-      // Process change paragraphs
-      if (typ === 'novao1' || typ === 'nova1') {
-        // This is a main change item number
-        currentChange = {
-          id: `change-${changeNumber++}`,
-          number: text,
-          title: '',
-          details: []
-        };
-        notification.changes.push(currentChange);
-      } else if ((typ === 'novao2' || typ === 'nova2') && currentChange) {
-        // This is the title/description of the change
-        currentChange.title = text;
-      } else if (currentChange && text) {
-        // This is a detail paragraph of the change
-        currentChange.details.push(text);
+    }
+    
+    // Search in other types of elements
+    for (const key in element) {
+      if (element[key] && typeof element[key] === 'object') {
+        this.findNovaElements(element[key], changes);
       }
     }
   }
 
   /**
-   * Extract changes from numbered paragraphs
-   * @param {Object} abschnitt - The section to extract from
-   * @param {Object} notification - The notification object to update
+   * Extract content that follows a novao1 element
+   * @param {Object} novao - The novao1 element
+   * @returns {string} - The extracted content
    */
-  extractChangesFromNumberedParagraphs(abschnitt, notification) {
-    if (!abschnitt.absatz) return;
+  extractNovaContent(novao) {
+    // This is a simplified approach - in a full implementation,
+    // you would need to extract all content that follows this novao1
+    // until the next novao1/novao2/nova1/nova2.
+    let content = [];
     
-    const allParagraphs = Array.isArray(abschnitt.absatz) 
-      ? abschnitt.absatz 
-      : [abschnitt.absatz];
+    // Check for common content patterns
+    if (novao.zitat) {
+      content.push(this.processTextContent(novao.zitat));
+    }
     
-    const numberedPattern = /^\d+\.\s/;
-    let currentChange = null;
-    let changeNumber = 1;
+    if (novao.absatz && Array.isArray(novao.absatz)) {
+      novao.absatz.slice(1).forEach(abs => {
+        content.push(this.processTextContent(abs));
+      });
+    }
     
-    for (const absatz of allParagraphs) {
-      const text = this.processTextContent(absatz);
+    return content.join('\n');
+  }
+  
+  /**
+   * Recursively extract all content from the XML in order
+   * @param {Object} element - The XML element to process
+   * @param {Array} content - Array to collect all content
+   */
+  extractContent(element, content) {
+    if (!element) return;
+    
+    // Process absatz elements
+    if (element.absatz) {
+      const absaetze = Array.isArray(element.absatz) ? element.absatz : [element.absatz];
       
-      // Skip empty paragraphs
-      if (!text) continue;
-      
-      // Process tables
+      absaetze.forEach(absatz => {
+        const typ = absatz['@_typ'] || '';
+        
+        // Special handling for novao2 paragraphs with nested <n> elements
+        if ((typ === 'novao2' || typ === 'nova2') && absatz.n) {
+          content.push({
+            type: 'absatz',
+            subtype: typ,
+            text: this.processAbsatzWithN(absatz)
+          });
+        } else {
+          // Normal processing for other absatz elements
+          const text = this.processTextContent(absatz);
+          if (text) {
+            content.push({
+              type: 'absatz',
+              subtype: typ,
+              text: text
+            });
+          }
+        }
+        
+        // Handle zitat elements - these often contain the actual change content
+        if (absatz.zitat) {
+          const zitatText = this.processZitatContent(absatz.zitat);
+          if (zitatText) {
+            content.push({
+              type: 'zitat',
+              parentType: typ, // Remember what type of element had this zitat
+              text: zitatText
+            });
+          }
+        }
+        
+        // Process nested tables
       if (absatz.table) {
-        this.processTableContent(absatz.table, notification);
-        continue;
+          const tableText = this.processTableContent(absatz.table);
+          content.push({
+            type: 'table',
+            text: tableText
+          });
+        }
+        
+        // Process nested inhaltsvz
+        if (absatz.inhaltsvz) {
+          const inhaltsvzText = this.processInhaltsvzContent(absatz.inhaltsvz);
+          if (inhaltsvzText) {
+            content.push({
+              type: 'inhaltsvz',
+              text: inhaltsvzText
+            });
+          }
+        }
+        
+        // Recursively process any other content
+        this.extractContent(absatz, content);
+      });
+    }
+    
+    // Process standalone inhaltsvz elements
+    if (element.inhaltsvz && !element.absatz) {
+      const inhaltsvzText = this.processInhaltsvzContent(element.inhaltsvz);
+      if (inhaltsvzText) {
+        content.push({
+          type: 'inhaltsvz',
+          text: inhaltsvzText
+        });
       }
-      
-      // Check if this is a numbered paragraph
-      if (numberedPattern.test(text)) {
-        // This is a main change item
-        currentChange = {
-          id: `change-${changeNumber++}`,
-          number: text.split('.')[0],
-          title: text.substring(text.indexOf('.') + 1).trim(),
-          details: []
-        };
-        notification.changes.push(currentChange);
-      } else if (currentChange && text) {
-        // This is a detail paragraph of the current change
-        currentChange.details.push(text);
+    }
+    
+    // Process standalone table elements
+    if (element.table && !element.absatz) {
+      const tableText = this.processTableContent(element.table);
+      content.push({
+        type: 'table',
+        text: tableText
+      });
+    }
+    
+    // Process standalone zitat elements
+    if (element.zitat && !element.absatz) {
+      const zitatText = this.processZitatContent(element.zitat);
+      if (zitatText) {
+        content.push({
+          type: 'zitat',
+          text: zitatText
+        });
       }
+    }
+    
+    // For abschnitt, process it recursively
+    if (element.abschnitt) {
+      const abschnitte = Array.isArray(element.abschnitt) ? element.abschnitt : [element.abschnitt];
+      abschnitte.forEach(abschnitt => {
+        this.extractContent(abschnitt, content);
+      });
     }
   }
 
   /**
-   * Process table content
-   * @param {Object} table - The table to process
-   * @param {Object} notification - The notification object to update
+   * Process table content to extract text
+   * @param {Object|Array} table - The table to process
+   * @returns {string} - The extracted table text
    */
-  processTableContent(table, notification) {
-    // Table processing implementation would go here
-    // This is a simplified version and may need to be expanded
-    if (!table) return;
+  processTableContent(table) {
+    if (!table) return "Tabelle im Dokument";
     
-    // For now, we just add a note about table content
-    notification.changes.push({
-      id: `change-table-${notification.changes.length + 1}`,
-      number: "T",
-      title: "Tabelle im Dokument",
-      details: ["Das Dokument enthält eine Tabelle, die in dieser Ansicht nicht vollständig dargestellt werden kann."]
+    let tableContent = ["Tabelle:"];
+    
+    // Check if we have rows
+    if (table.tr) {
+      const rows = Array.isArray(table.tr) ? table.tr : [table.tr];
+      
+      rows.forEach(row => {
+        if (row.td) {
+          const cells = Array.isArray(row.td) ? row.td : [row.td];
+          let rowText = [];
+          
+          cells.forEach(cell => {
+            if (cell.inhaltsvz) {
+              rowText.push(this.processInhaltsvzContent(cell.inhaltsvz));
+            } else if (cell['#text']) {
+              rowText.push(cell['#text'].trim());
+            }
+          });
+          
+          if (rowText.length > 0) {
+            tableContent.push(rowText.join(" | "));
+          }
+        }
+      });
+    }
+    
+    return tableContent.join('\n');
+  }
+  
+  /**
+   * Process inhaltsvz content (table of contents)
+   * @param {Object|Array} inhaltsvz - The inhaltsvz to process
+   * @returns {string} - The extracted text
+   */
+  processInhaltsvzContent(inhaltsvz) {
+    if (!inhaltsvz) return "";
+    
+    const items = Array.isArray(inhaltsvz) ? inhaltsvz : [inhaltsvz];
+    let content = [];
+    
+    items.forEach(item => {
+      const text = this.processTextContent(item);
+      if (text) {
+        content.push(text);
+      }
     });
+    
+    return content.join(' ').trim();
   }
 }
 

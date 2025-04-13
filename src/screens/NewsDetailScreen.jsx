@@ -25,32 +25,39 @@ const formatDate = (dateString) => {
 };
 
 const ChangeItem = ({ change }) => {
-  // Extract the paragraph number from the instruction
-  const paragraphMatch = change.instruction.match(/§\s*\d+[a-z]*(?:\s*Abs\.\s*\d+)?/);
-  const paragraph = paragraphMatch ? paragraphMatch[0] : "";
-
+  const [expanded, setExpanded] = useState(false);
+  
   return (
     <View className="mb-4 pb-4 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
-      {paragraph && (
-        <View className="bg-gray-200 px-3 py-1.5 rounded mb-2 self-start">
-          <Text className="text-black font-medium">{paragraph}</Text>
-        </View>
-      )}
-
       <View className="mb-2">
-        <Text className="text-gray-900 mb-2">{change.instruction}</Text>
-
-        {change.newText && change.newText.trim() !== "" && (
-          <View className="bg-gray-100 px-3 py-2 rounded border-l-4 border-primary mt-2">
-            <Text className="text-gray-800">{change.newText}</Text>
-          </View>
+        <Text className="text-gray-900 font-medium mb-2">{change.title}</Text>
+        
+        {change.change && change.change.trim() !== "" && (
+          <TouchableOpacity
+            onPress={() => setExpanded(!expanded)}
+            activeOpacity={0.7}
+          >
+            <View className="bg-gray-100 px-3 py-2 rounded border-l-4 border-primary mt-2">
+              <Text 
+                className="text-gray-800"
+                numberOfLines={expanded ? undefined : 3}
+              >
+                {change.change}
+              </Text>
+              {change.change.length > 150 && (
+                <Text className="text-primary text-xs mt-1">
+                  {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
         )}
       </View>
     </View>
   );
 };
 
-const ArticleSection = ({ article }) => {
+const ArticleSection = ({ article, changes }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -62,8 +69,13 @@ const ArticleSection = ({ article }) => {
       >
         <View className="flex-1 pr-3">
           <Text className="font-bold text-gray-800">
-            {article.subtitle || article.title}
+            {article.title}
           </Text>
+          {article.subtitle && !expanded && (
+            <Text className="text-gray-600 mt-1" numberOfLines={1}>
+              {article.subtitle}
+            </Text>
+          )}
         </View>
         <Ionicons 
           name={expanded ? 'chevron-up' : 'chevron-down'} 
@@ -74,14 +86,24 @@ const ArticleSection = ({ article }) => {
 
       {expanded && (
         <View className="p-4 bg-gray-50 border-t border-gray-200">
-          {article.changes && article.changes.length > 0 ? (
-            article.changes.map((change) => (
-              <ChangeItem key={change.id} change={change} />
-            ))
+          {article.subtitle && (
+            <Text className="text-gray-800 mb-4">
+              {article.subtitle}
+            </Text>
+          )}
+          
+          {/* Show changes for this article */}
+          {changes && changes.length > 0 ? (
+            <View>
+              <Text className="font-bold text-gray-800 mb-3">Änderungen:</Text>
+              {changes.map(change => (
+                <ChangeItem key={change.id} change={change} />
+              ))}
+            </View>
           ) : (
             <View className="py-2">
               <Text className="text-gray-500 italic text-center">
-                Keine Änderungen vorhanden
+                Keine Änderungen für diesen Artikel
               </Text>
             </View>
           )}
@@ -95,6 +117,8 @@ const NewsDetailScreen = ({ route, navigation }) => {
   const { newsItem } = route.params;
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [scaleAnimation] = useState(new Animated.Value(1));
+  const [articleChanges, setArticleChanges] = useState([]);
+  const [ungroupedChanges, setUngroupedChanges] = useState([]);
 
   const checkIfBookmarked = async () => {
     const bookmarks = await bookmarkStorage.getBookmarks();
@@ -103,7 +127,49 @@ const NewsDetailScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     checkIfBookmarked();
+    
+    // Group changes by article
+    if (newsItem.articles && newsItem.articles.length > 0 && newsItem.changes) {
+      groupChangesByArticle();
+    } else if (newsItem.changes) {
+      setUngroupedChanges(newsItem.changes);
+    }
   }, [newsItem]);
+
+  // Group changes by article based on the numbering
+  const groupChangesByArticle = () => {
+    const articleCount = newsItem.articles.length;
+    const changeGroups = [];
+    let currentGroup = [];
+    let currentArticleIndex = 0;
+    
+    // Iterate through changes and group them
+    newsItem.changes.forEach(change => {
+      // If we find a change starting with "1.", it's the beginning of a new article's changes
+      if (change.title.trim().startsWith("1.") && currentGroup.length > 0) {
+        changeGroups.push([...currentGroup]);
+        currentGroup = [];
+        currentArticleIndex++;
+      }
+      
+      // Add the change to current group if not exceeding article count
+      if (currentArticleIndex < articleCount) {
+        currentGroup.push(change);
+      }
+    });
+    
+    // Add the last group if not empty
+    if (currentGroup.length > 0 && currentArticleIndex < articleCount) {
+      changeGroups.push(currentGroup);
+    }
+    
+    // Fill remaining articles with empty arrays if needed
+    while (changeGroups.length < articleCount) {
+      changeGroups.push([]);
+    }
+    
+    setArticleChanges(changeGroups);
+  };
 
   useEffect(() => {
     if (isBookmarked) {
@@ -253,25 +319,30 @@ const NewsDetailScreen = ({ route, navigation }) => {
           </View>
         )}
         
-        {/* Articles and changes */}
-        <View className="p-4">
-          <Text className="font-bold text-lg text-gray-800 mb-3">
-            Änderungen im Detail
-          </Text>
-          
-          {newsItem.articles && newsItem.articles.length > 0 ? (
-            newsItem.articles.map((article) => (
-              <ArticleSection key={article.id} article={article} />
-            ))
-          ) : (
-            <View className="py-4 items-center">
-              <Ionicons name="document-outline" size={48} color="#ccc" />
-              <Text className="text-gray-500 mt-2 text-center">
-                Keine detaillierten Änderungen verfügbar
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Articles with their changes */}
+        {newsItem.articles && newsItem.articles.length > 0 && (
+          <View className="p-4">
+            {newsItem.articles.map((article, index) => (
+              <ArticleSection 
+                key={article.id} 
+                article={article}
+                changes={articleChanges[index] || []}
+              />
+            ))}
+          </View>
+        )}
+        
+        {/* Standalone changes when no articles are present */}
+        {(!newsItem.articles || newsItem.articles.length === 0) && ungroupedChanges.length > 0 && (
+          <View className="p-4">
+            <Text className="text-lg font-bold text-gray-800 mb-3">
+              Änderungen
+            </Text>
+            {ungroupedChanges.map((change) => (
+              <ChangeItem key={change.id} change={change} />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

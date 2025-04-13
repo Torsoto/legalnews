@@ -86,43 +86,50 @@ export const getLatestNotifications = async (req, res, next) => {
         }
 
         console.log(`New notification ${bgblNummer} found, processing XML...`);
-        const mainDoc = doc.Data.Dokumentliste?.ContentReference;
-        if (mainDoc?.Urls?.ContentUrl) {
-          const contentUrls = Array.isArray(mainDoc.Urls.ContentUrl)
-            ? mainDoc.Urls.ContentUrl
-            : [mainDoc.Urls.ContentUrl];
+        
+        // Fix URL format: Extract parts and use BGBLA_YEAR_TYPE_NUMBER format
+        const parts = bgblNummer.match(/BGBl\.\s+(\w+)\s+Nr\.\s+(\d+)\/(\d+)/i);
+        let xmlUrl = '';
+        
+        if (parts) {
+          const type = parts[1]; // I or II
+          const number = parts[2];
+          const year = parts[3];
+          xmlUrl = `https://www.ris.bka.gv.at/Dokumente/BgblAuth/BGBLA_${year}_${type}_${number}/BGBLA_${year}_${type}_${number}.xml`;
+        } else {
+          // Fallback to direct format if pattern doesn't match
+          const cleanId = bgblNummer.replace(/\s+/g, '');
+          xmlUrl = `https://www.ris.bka.gv.at/Dokumente/BgblAuth/${cleanId}/${cleanId}.xml`;
+        }
+        
+        console.log(`XML URL constructed: ${xmlUrl}`);
+        
+        const xmlResponse = await fetch(xmlUrl);
+        if (xmlResponse.ok) {
+          console.log(`XML for ${bgblNummer} successfully retrieved`);
+          const xmlText = await xmlResponse.text();
 
-          const xmlUrl = contentUrls.find((url) => url.DataType === "Xml")?.Url;
+          const notification = xmlParser.parse(xmlText, {
+            id: bgblNummer,
+            Bgblnummer: bgblNummer,
+            Titel: metadata.Bundesrecht.Titel,
+            Ausgabedatum: bgblInfo.Ausgabedatum,
+          });
 
-          if (xmlUrl) {
-            console.log(`XML URL found: ${xmlUrl}`);
-            const xmlResponse = await fetch(xmlUrl);
-            if (xmlResponse.ok) {
-              console.log(`XML for ${bgblNummer} successfully retrieved`);
-              const xmlText = await xmlResponse.text();
+          // Generate AI summary
+          console.log(`Generating AI summary for ${bgblNummer}`);
+          const fullText = `${notification.title}\n${notification.description}\n${
+            notification.articles.length > 0 
+              ? notification.articles.map((art) => `${art.title}\n${art.subtitle}`).join("\n")
+              : notification.changes.map((change) => `${change.title}\n${change.change}`).join("\n")
+          }`;
+          
+          const { summary, category } = await summarizeWithGemini(fullText);
+          notification.aiSummary = summary;
+          notification.category = category;
 
-              const notification = xmlParser.parse(xmlText, {
-                id: bgblNummer,
-                Bgblnummer: bgblNummer,
-                Titel: metadata.Bundesrecht.Titel,
-                Ausgabedatum: bgblInfo.Ausgabedatum,
-              });
-
-              // Generate AI summary
-              console.log(`Generating AI summary for ${bgblNummer}`);
-              const fullText = `${notification.title}\n${
-                notification.description
-              }\n${notification.articles
-                .map((art) => `${art.title}\n${art.subtitle}`)
-                .join("\n")}`;
-              const { summary, category } = await summarizeWithGemini(fullText);
-              notification.aiSummary = summary;
-              notification.category = category;
-
-              notifications.push(notification);
-              newNotifications.push(notification);
-            }
-          }
+          notifications.push(notification);
+          newNotifications.push(notification);
         }
       } catch (docErr) {
         console.error(`Error processing document: ${docErr.message}`);
