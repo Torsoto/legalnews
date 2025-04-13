@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { preventCache } from "./middleware/cacheControl.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +20,7 @@ app.use(preventCache);
 
 // Apply routes
 app.use("/api", notificationRoutes);
+app.use("/api/user", userRoutes);
 
 // Apply error handler middleware (must be last)
 app.use(errorHandler);
@@ -30,6 +32,7 @@ app.listen(port, "0.0.0.0", () => {
   console.log(`- GET /api/notifications - Fetch latest legal notifications from Austrian RIS`);
   console.log(`- GET /api/state-notifications - Fetch latest state legal notifications from Austrian RIS`);
   console.log(`- GET /api/stored-notifications - Retrieve stored notifications from Firestore`);
+  console.log(`- GET /api/user/subscriptions/:userId - Get user subscriptions`);
   console.log(`- GET /api/test - Test API connectivity`);
 
 });

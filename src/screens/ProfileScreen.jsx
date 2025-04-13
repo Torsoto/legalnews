@@ -12,22 +12,28 @@ import {
   Keyboard,
   SafeAreaView,
   StatusBar,
+  ScrollView,
+  FlatList,
 } from 'react-native';
 import { auth } from '../../config/firebase';
 import { updateProfile, signOut } from 'firebase/auth';
 import { clearAuth } from "../utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import { API } from '../constants/api';
 
 const ProfileScreen = ({ navigation }) => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
 
   useEffect(() => {
     if (auth.currentUser) {
       setDisplayName(auth.currentUser.displayName || '');
       setEmail(auth.currentUser.email || '');
+      fetchUserSubscriptions();
     }
   }, []);
 
@@ -37,6 +43,32 @@ const ProfileScreen = ({ navigation }) => {
       headerShown: false,
     });
   }, [navigation]);
+
+  const fetchUserSubscriptions = async () => {
+    if (!auth.currentUser) return;
+    
+    setLoadingSubscriptions(true);
+    try {
+      // Use the proper API structure from constants
+      const url = `${API.BASE_URL}/user/subscriptions/${auth.currentUser.uid}`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSubscriptions(data.subscriptions);
+      }
+    } catch (error) {
+      Alert.alert('Fehler', 'Fehler beim Laden Ihrer Abonnements');
+    } finally {
+      setLoadingSubscriptions(false);
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!displayName.trim()) {
@@ -69,6 +101,32 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const renderSubscriptionItem = ({ item }) => {
+    const { category, types } = item;
+    const activeTypes = Object.entries(types)
+      .filter(([_, value]) => value)
+      .map(([key]) => key);
+    
+    return (
+      <View className="bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
+        <Text className="text-lg font-semibold text-gray-800 mb-2">{category}</Text>
+        <View className="flex-row flex-wrap">
+          {activeTypes.map((type) => (
+            <View 
+              key={type} 
+              className="bg-primary/10 px-3 py-1 rounded-full mr-2 mb-1"
+            >
+              <Text className="text-primary font-medium">{type}</Text>
+            </View>
+          ))}
+          {activeTypes.length === 0 && (
+            <Text className="text-gray-500 italic">Keine aktiven Abonnements</Text>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView 
       className="flex-1 bg-gray-50"
@@ -77,7 +135,7 @@ const ProfileScreen = ({ navigation }) => {
       }}
     >
       {/* Custom Header */}
-      <View className="bg-white shadow-md border-b border-gray-200 mb-4">
+      <View className="bg-white shadow-md border-b border-gray-200">
         <View className="flex-row justify-between items-center pt-4 pb-4 px-5">
           <Text className="text-2xl font-bold text-gray-800">Profil</Text>
           {!isEditing && (
@@ -88,81 +146,125 @@ const ProfileScreen = ({ navigation }) => {
         </View>
       </View>
       
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
-          style={{ flex: 1 }}
-        >
-          <View className="flex-1 px-5">
-            <View className="bg-white rounded-2xl shadow-sm p-6 mb-5">
-              <View className="mb-6">
-                <Text className="text-lg font-bold text-gray-800 mb-2">{displayName || 'Kein Name'}</Text>
-                <Text className="text-gray-500">{email}</Text>
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="px-5 py-4">
+          {/* Profile Card */}
+          <View className="bg-white rounded-2xl shadow-sm p-6 mb-5">
+            <View className="flex-row items-center mb-6">
+              <View className="h-16 w-16 rounded-full bg-primary/10 items-center justify-center mr-4">
+                <Text className="text-primary text-xl font-bold">
+                  {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
+                </Text>
               </View>
-
-              <View className="space-y-5">
-                <View>
-                  <Text className="text-gray-600 font-medium mb-2">Anzeigename</Text>
-                  {isEditing ? (
-                    <TextInput
-                      className="border border-gray-300 bg-gray-50 p-4 rounded-xl text-base"
-                      value={displayName}
-                      onChangeText={setDisplayName}
-                      placeholder="Ihr Name"
-                    />
-                  ) : (
-                    <View className="bg-gray-50 p-4 rounded-xl">
-                      <Text className="text-base text-gray-800">{displayName || 'Kein Name'}</Text>
-                    </View>
-                  )}
-                </View>
-
-                <View>
-                  <Text className="text-gray-600 font-medium mb-2">E-Mail</Text>
-                  <View className="bg-gray-50 p-4 rounded-xl">
-                    <Text className="text-base text-gray-800">{email}</Text>
-                  </View>
-                </View>
+              <View>
+                <Text className="text-xl font-bold text-gray-800 mb-1">{displayName || 'Kein Name'}</Text>
+                <Text className="text-gray-500">{email}</Text>
               </View>
             </View>
 
-            {isEditing ? (
-              <View className="flex-row space-x-4 mb-5">
-                <TouchableOpacity
-                  className="flex-1 bg-gray-200 p-4 rounded-xl items-center"
-                  onPress={() => {
-                    setIsEditing(false);
-                    setDisplayName(auth.currentUser?.displayName || '');
-                  }}
-                  disabled={loading}
+            <View className="space-y-5">
+              <View>
+                <Text className="text-gray-600 font-medium mb-2">Anzeigename</Text>
+                {isEditing ? (
+                  <TextInput
+                    className="border border-gray-300 bg-gray-50 p-4 rounded-xl text-base"
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    placeholder="Ihr Name"
+                  />
+                ) : (
+                  <View className="bg-gray-50 p-4 rounded-xl">
+                    <Text className="text-base text-gray-800">{displayName || 'Kein Name'}</Text>
+                  </View>
+                )}
+              </View>
+
+              <View>
+                <Text className="text-gray-600 font-medium mb-2">E-Mail</Text>
+                <View className="bg-gray-50 p-4 rounded-xl">
+                  <Text className="text-base text-gray-800">{email}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Edit Actions */}
+          {isEditing ? (
+            <View className="flex-row space-x-4 mb-5">
+              <TouchableOpacity
+                className="flex-1 bg-gray-200 p-4 rounded-xl items-center"
+                onPress={() => {
+                  setIsEditing(false);
+                  setDisplayName(auth.currentUser?.displayName || '');
+                }}
+                disabled={loading}
+              >
+                <Text className="text-gray-800 font-bold">Abbrechen</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="flex-1 bg-primary p-4 rounded-xl items-center"
+                onPress={handleUpdateProfile}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-bold">Speichern</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* Subscriptions Section */}
+          <View className="mb-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-bold text-gray-800">Meine Abonnements</Text>
+              <TouchableOpacity onPress={fetchUserSubscriptions}>
+                <Ionicons name="refresh" size={20} color="#4F46E5" />
+              </TouchableOpacity>
+            </View>
+            
+            {loadingSubscriptions ? (
+              <View className="py-8 items-center">
+                <ActivityIndicator size="large" color="#4F46E5" />
+                <Text className="text-gray-500 mt-2">Lade Abonnements...</Text>
+              </View>
+            ) : subscriptions.length > 0 ? (
+              <FlatList
+                data={subscriptions}
+                renderItem={renderSubscriptionItem}
+                keyExtractor={(item) => item.category}
+                scrollEnabled={false}
+              />
+            ) : (
+              <View className="bg-white p-6 rounded-xl items-center">
+                <Ionicons name="document-text-outline" size={40} color="#9CA3AF" />
+                <Text className="text-gray-500 mt-2 text-center">
+                  Sie haben noch keine Kategorien abonniert
+                </Text>
+                <TouchableOpacity 
+                  className="mt-4 bg-primary px-4 py-2 rounded-lg"
+                  onPress={() => navigation.navigate('Abonnements')}
                 >
-                  <Text className="text-gray-800 font-bold">Abbrechen</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="flex-1 bg-primary p-4 rounded-xl items-center"
-                  onPress={handleUpdateProfile}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text className="text-white font-bold">Speichern</Text>
-                  )}
+                  <Text className="text-white font-medium">Kategorien abonnieren</Text>
                 </TouchableOpacity>
               </View>
-            ) : null}
-            
-            <TouchableOpacity
-              className="bg-red-500 p-4 rounded-xl items-center flex-row justify-center mt-auto mb-6"
-              onPress={handleLogout}
-            >
-              <Ionicons name="log-out-outline" size={20} color="white" />
-              <Text className="text-white font-bold ml-2">Abmelden</Text>
-            </TouchableOpacity>
+            )}
           </View>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+            
+          {/* Logout Button */}
+          <TouchableOpacity
+            className="bg-red-500 p-4 rounded-xl items-center flex-row justify-center mt-auto mb-6"
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={20} color="white" />
+            <Text className="text-white font-bold ml-2">Abmelden</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
