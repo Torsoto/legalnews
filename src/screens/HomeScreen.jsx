@@ -516,7 +516,7 @@ const HomeScreen = ({ navigation }) => {
                   key={jId}
                   className="bg-primary bg-opacity-20 rounded-full px-3 py-1 mr-2 mb-2"
                 >
-                  <Text className="text-primary font-medium">{jurisdiction.label}</Text>
+                  <Text className="text-white font-medium">{jurisdiction.label}</Text>
                 </View>
               );
             })}

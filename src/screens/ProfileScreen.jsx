@@ -28,6 +28,7 @@ const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+  const [removingSubscription, setRemovingSubscription] = useState(false);
 
   useEffect(() => {
     if (auth.currentUser) {
@@ -70,6 +71,56 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const removeSubscription = async (category) => {
+    if (!auth.currentUser) return;
+    
+    Alert.alert(
+      'Abonnement entfernen',
+      `Möchten Sie das Abonnement für "${category}" wirklich entfernen?`,
+      [
+        {
+          text: 'Abbrechen',
+          style: 'cancel'
+        },
+        {
+          text: 'Entfernen',
+          style: 'destructive',
+          onPress: async () => {
+            setRemovingSubscription(true);
+            try {
+              const url = `${API.BASE_URL}/user/subscriptions/${auth.currentUser.uid}/${category}`;
+              
+              const response = await fetch(url, {
+                method: 'DELETE',
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              
+              if (data.success) {
+                // Remove the subscription from local state
+                setSubscriptions(prevSubscriptions => 
+                  prevSubscriptions.filter(sub => sub.category !== category)
+                );
+                Alert.alert('Erfolg', `Abonnement für "${category}" wurde entfernt`);
+              } else {
+                throw new Error(data.message || 'Fehler beim Entfernen des Abonnements');
+              }
+            } catch (error) {
+              console.error('Error removing subscription:', error);
+              Alert.alert('Fehler', 'Fehler beim Entfernen des Abonnements');
+            } finally {
+              setRemovingSubscription(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleUpdateProfile = async () => {
     if (!displayName.trim()) {
       Alert.alert('Fehler', 'Bitte geben Sie einen Namen ein');
@@ -109,7 +160,16 @@ const ProfileScreen = ({ navigation }) => {
     
     return (
       <View className="bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
-        <Text className="text-lg font-semibold text-gray-800 mb-2">{category}</Text>
+        <View className="flex-row justify-between items-center mb-2">
+          <Text className="text-lg font-semibold text-gray-800">{category}</Text>
+          <TouchableOpacity 
+            onPress={() => removeSubscription(category)}
+            disabled={removingSubscription}
+            className="bg-red-100 px-2 py-1 rounded-lg"
+          >
+            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
         <View className="flex-row flex-wrap">
           {activeTypes.map((type) => (
             <View 

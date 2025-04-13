@@ -55,4 +55,51 @@ export const getUserSubscriptions = async (req, res) => {
       message: error.message 
     });
   }
+};
+
+/**
+ * Remove a subscription category for a specific user
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const removeUserSubscription = async (req, res) => {
+  try {
+    const { userId, category } = req.params;
+    
+    if (!userId || !category) {
+      return res.status(400).json({ error: "User ID and category are required" });
+    }
+    
+    // Reference to the user document in the specific category collection
+    const userRef = db.collection("subscriptions")
+                      .doc(category)
+                      .collection("users")
+                      .doc(userId);
+    
+    // Check if the document exists
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Subscription not found" 
+      });
+    }
+    
+    // Delete the user's subscription to this category
+    await userRef.delete();
+    
+    return res.status(200).json({
+      success: true,
+      message: `Subscription to ${category} removed successfully`
+    });
+    
+  } catch (error) {
+    console.error("Error removing user subscription:", error);
+    return res.status(500).json({ 
+      success: false,
+      error: "Failed to remove subscription",
+      message: error.message 
+    });
+  }
 }; 

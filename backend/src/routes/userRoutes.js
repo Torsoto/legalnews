@@ -1,5 +1,5 @@
 import express from "express";
-import { getUserSubscriptions } from "../controllers/userController.js";
+import { getUserSubscriptions, removeUserSubscription } from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -9,5 +9,12 @@ const router = express.Router();
  * @access  Public
  */
 router.get("/subscriptions/:userId", getUserSubscriptions); 
+
+/**
+ * @route   DELETE /api/user/subscriptions/:userId/:category
+ * @desc    Remove a specific subscription category for a user
+ * @access  Public
+ */
+router.delete("/subscriptions/:userId/:category", removeUserSubscription);
 
 export default router; 

@@ -5,11 +5,11 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  Image,
   TouchableWithoutFeedback,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
@@ -44,37 +44,44 @@ const LoginScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-white"
       >
-        <View className="flex-1 bg-white p-5">
-          <View className="mt-16 mb-10">
-            <Text className="text-3xl font-bold">Willkommen</Text>
-            <Text className="text-3xl font-bold text-primary">zurück!</Text>
-            <Text className="text-base text-gray-500 mt-2">Schön, dass Sie wieder da sind</Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View className="flex-1 bg-white p-6">
+          <View className="mt-12 mb-10">
+            <Text className="text-3xl font-bold text-gray-800">Willkommen zu</Text>
+            <Text className="text-3xl font-bold text-primary">LegalNews</Text>
+            <Text className="text-base text-gray-500 mt-3">Melden Sie sich an, um fortzufahren</Text>
           </View>
 
           <View className="flex-1">
-            <TextInput
-              className="border border-gray-200 p-4 rounded-xl mb-4 text-base"
-              placeholder="E-Mail"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+            <View className="bg-gray-50 p-1 rounded-xl mb-6 shadow-sm">
+              <TextInput
+                className="p-4 text-base text-gray-800"
+                placeholder="E-Mail"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
 
-            <TextInput
-              className="border border-gray-200 p-4 rounded-xl mb-4 text-base"
-              placeholder="Passwort"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View className="bg-gray-50 p-1 rounded-xl mb-3 shadow-sm">
+              <TextInput
+                className="p-4 text-base text-gray-800"
+                placeholder="Passwort"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
 
-            <TouchableOpacity className="self-end mb-5">
-              <Text className="text-primary">Passwort vergessen?</Text>
+            <TouchableOpacity className="self-end mb-8">
+              <Text className="text-primary font-medium">Passwort vergessen?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-primary p-4 rounded-xl items-center"
+              className="bg-primary p-4 rounded-xl items-center shadow-md"
               onPress={handleLogin}
               disabled={loading}
             >
@@ -83,7 +90,7 @@ const LoginScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
 
-            <View className="flex-row justify-center mt-5">
+            <View className="flex-row justify-center mt-6">
               <Text className="text-gray-500">Noch kein Konto? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Registrieren')}>
                 <Text className="text-primary font-bold">Registrieren</Text>
