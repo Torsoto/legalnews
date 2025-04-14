@@ -1,28 +1,69 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-name: Node.js CI
+name: Fetch newest laws from RIS
 
 on:
-  workflow_dispatch:
-
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 8 * * *'  # Run at 8:00 AM UTC every day
 
 jobs:
-  build:
-
+  fetch-laws:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
+    
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
+    
+    - name: Use Node.js 18.x
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 18.x
         cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+    
+    - name: Set up environment variables
+      working-directory: ./backend
+      run: |
+        echo "PORT=3000" >> .env
+        echo "GOOGLE_GENAI_API_KEY=${{ secrets.GOOGLE_GENAI_API_KEY }}" >> .env
+    
+    - name: Create Firebase service account file
+      working-directory: ./backend
+      run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccountKey.json
+    
+    - name: Create direct fetch script
+      working-directory: ./backend
+      run: |
+        cat > fetch-data.js << 'EOF'
+        // Direct fetch script using Admin SDK
+        import { db } from './config/firebase-admin.js';
+        import * as notificationService from './src/service/notificationService.js';
+
+        const runFetches = async () => {
+          try {
+            console.log('Fetching federal notifications...');
+            const federalResult = await notificationService.fetchLatestNotifications();
+            console.log('Federal notifications result:', federalResult);
+            
+            console.log('Fetching state notifications...');
+            const stateResult = await notificationService.fetchStateNotifications();
+            console.log('State notifications result:', stateResult);
+            
+            console.log('All notifications fetched successfully');
+          } catch (error) {
+            console.error('Error fetching notifications:', error);
+            process.exit(1);
+          }
+        };
+
+        runFetches();
+        EOF
+    
+    - name: Run data fetch
+      working-directory: ./backend
+      run: node fetch-data.js

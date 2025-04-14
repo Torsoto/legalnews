@@ -4,6 +4,11 @@ import { auth } from '../../config/firebase';
 const AUTH_TOKEN_KEY = '@auth_token';
 const AUTH_USER_KEY = '@auth_user';
 
+/**
+ * Persists user authentication data to AsyncStorage
+ * @param {Object} user - Firebase user object
+ * @returns {Promise<boolean>} - True if successful, false otherwise
+ */
 export const persistAuth = async (user) => {
   try {
     // Store the user's ID token
@@ -26,6 +31,10 @@ export const persistAuth = async (user) => {
   }
 };
 
+/**
+ * Clears all authentication data from AsyncStorage
+ * @returns {Promise<boolean>} - True if successful, false otherwise
+ */
 export const clearAuth = async () => {
   try {
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
@@ -37,6 +46,10 @@ export const clearAuth = async () => {
   }
 };
 
+/**
+ * Retrieves and validates persisted authentication data
+ * @returns {Promise<Object|null>} - User data if authenticated, null otherwise
+ */
 export const getPersistedAuth = async () => {
   try {
     const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);

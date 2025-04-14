@@ -66,7 +66,7 @@ class AiService {
     try {
       const categoryExamples = this.buildCategoryPromptText();
 
-      const prompt = `Du bist ein Experte für österreichisches Recht. Bitte fasse diesen Gesetzestext in maximal 3 kurzen, verständlichen Sätzen zusammen **und schlage eine passende rechtliche Kategorie basierend auf den unten stehenden Beispielen vor**.
+      const prompt = `Du bist ein Experte für österreichisches Recht. Bitte fasse diesen Gesetzestext in wenigen kurzen, verständlichen Sätzen zusammen **und schlage eine passende rechtliche Kategorie basierend auf den unten stehenden Beispielen vor**.
 
       Gesetzestext:
       ${originalText}

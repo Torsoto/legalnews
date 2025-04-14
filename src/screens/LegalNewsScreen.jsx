@@ -579,19 +579,27 @@ const LegalNewsScreen = ({ navigation }) => {
                   <TouchableOpacity 
                     className="mr-4 p-2 bg-blue-100 rounded-lg"
                     onPress={async () => {
-                      // Reset read status and deleted notifications for testing
-                      await notificationStorage.clearAllNotificationData();
-                      
-                      // Reset state first
-                      setReadNotifications({});
-                      setDeletedNotifications({});
-                      
-                      // Then fetch new data
-                      await fetchNews();
-                      
-                      // Force a re-filter of notifications to show them immediately 
-                      const filtered = applyFilters(allNews);
-                      setNews(filtered);
+                      try {
+                        // Start with loading indicator
+                        setLoading(true);
+                        
+                        // Reset read status and deleted notifications for testing
+                        await notificationStorage.clearAllNotificationData();
+                        
+                        // Reset state
+                        setReadNotifications({});
+                        setDeletedNotifications({});
+                        
+                        // Fetch new data - this internally sets news state after applying filters
+                        await fetchNews();
+                        
+                        // No need to manually filter again as fetchNews already does this
+                      } catch (error) {
+                        console.error("Error refreshing test data:", error);
+                        setError("Fehler beim Zurücksetzen der Testdaten");
+                      } finally {
+                        setLoading(false);
+                      }
                     }}
                   >
                     <Text className="text-primary text-sm font-medium">Test Refresh</Text>
