@@ -6,6 +6,7 @@
 // Legal categories and jurisdictions
 export { legalCategories } from './legalCategories';
 export { jurisdictions } from './jurisdictions';
+export { bundeslaender } from './bundeslaender';
 
 // API configuration
 export { API } from './api';

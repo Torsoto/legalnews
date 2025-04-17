@@ -5,8 +5,8 @@ import { PORT } from "@env";
  */
 export const API = {
   // Base URL for the backend API
-  BASE_URL: `http://192.168.0.136:${PORT}/api`,
-  
+  BASE_URL: `http://192.168.0.128:${PORT}/api`,
+
   // Endpoints
   ENDPOINTS: {
     NOTIFICATIONS: "/notifications",
@@ -14,11 +14,11 @@ export const API = {
     STORED_NOTIFICATIONS: "/stored-notifications",
     TEST: "/test",
   },
-  
+
   // Default request options
   OPTIONS: {
     headers: {
       "Content-Type": "application/json",
     },
   },
-}; 
+};

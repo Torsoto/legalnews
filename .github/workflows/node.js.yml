@@ -6,7 +6,7 @@ name: Fetch newest laws from RIS
 on:
   workflow_dispatch:  # Manual trigger
   schedule:
-    - cron: '0 8 * * *'  # Run at 8:00 AM UTC every day
+    - cron: '0 6 * * *'  # Run at 6:00 AM UTC every day
 
 jobs:
   fetch-laws:
@@ -49,12 +49,22 @@ jobs:
             // 1. Federal notifications
             console.log('\n[1/2] Fetching federal notifications...');
             const federalResult = await notificationService.fetchLatestNotifications();
-            console.log(`✓ Federal fetch complete: ${JSON.stringify(federalResult)}`);
+            
+            // Display federal notifications
+            console.log(`\nFetched ${federalResult.count} federal notifications (${federalResult.new} new):`);
+            federalResult.notifications.forEach((notification, index) => {
+              console.log(`[${index + 1}] ${notification.id}`);
+            });
             
             // 2. State notifications
             console.log('\n[2/2] Fetching state notifications...');
             const stateResult = await notificationService.fetchStateNotifications();
-            console.log(`✓ State fetch complete: ${JSON.stringify(stateResult)}`);
+            
+            // Display state notifications
+            console.log(`\nFetched ${stateResult.count} state notifications (${stateResult.new} new):`);
+            stateResult.notifications.forEach((notification, index) => {
+              console.log(`[${index + 1}] ${notification.id}`);
+            });
             
             console.log('\n==== All notifications successfully fetched and stored ====');
           } catch (error) {

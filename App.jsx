@@ -13,7 +13,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignUpScreen from "./src/screens/SignUpScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
-import BookmarksScreen from "./src/screens/BookmarksScreen";
+import EffectiveDatesScreen from "./src/screens/EffectiveDatesScreen";
 import LegalNewsScreen from "./src/screens/LegalNewsScreen";
 import NewsDetailScreen from "./src/screens/NewsDetailScreen";
 
@@ -67,14 +67,14 @@ export default function App() {
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
-            if (route.name === 'Rechtsnews') {
-              iconName = focused ? 'newspaper' : 'newspaper-outline';
-            } else if (route.name === 'Abonnements') {
-              iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Profil') {
-              iconName = focused ? 'person' : 'person-outline';
-            } else if (route.name === 'Lesezeichen') {
-              iconName = focused ? 'bookmark' : 'bookmark-outline';
+            if (route.name === "Rechtsnews") {
+              iconName = focused ? "newspaper" : "newspaper-outline";
+            } else if (route.name === "Abonnements") {
+              iconName = focused ? "home" : "home-outline";
+            } else if (route.name === "Profil") {
+              iconName = focused ? "person" : "person-outline";
+            } else if (route.name === "Inkrafttreten") {
+              iconName = focused ? "timer" : "timer-outline";
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
@@ -84,22 +84,10 @@ export default function App() {
           headerShown: false,
         })}
       >
-        <Tab.Screen 
-          name="Rechtsnews" 
-          component={LegalNewsScreen}
-        />
-        <Tab.Screen 
-          name="Abonnements" 
-          component={HomeScreen}
-        />
-        <Tab.Screen 
-          name="Lesezeichen" 
-          component={BookmarksScreen}
-        />
-        <Tab.Screen 
-          name="Profil" 
-          component={ProfileScreen}
-        />
+        <Tab.Screen name="Rechtsnews" component={LegalNewsScreen} />
+        <Tab.Screen name="Abonnements" component={HomeScreen} />
+        <Tab.Screen name="Inkrafttreten" component={EffectiveDatesScreen} />
+        <Tab.Screen name="Profil" component={ProfileScreen} />
       </Tab.Navigator>
     );
   };
@@ -113,14 +101,14 @@ export default function App() {
               name="Main"
               component={TabStack}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
             <Stack.Screen
               name="NewsDetail"
               component={NewsDetailScreen}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
           </>

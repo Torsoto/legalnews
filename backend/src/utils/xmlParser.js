@@ -100,17 +100,26 @@ class BgblXmlParser {
   parse(xmlText, metadata) {
     try {
       const xmlData = this.parser.parse(xmlText);
+      
+      // Initialize notification with correct metadata based on whether it's a state or federal notification
+      const isStateNotification = metadata.id?.includes('LGBl.') || metadata.bundesland;
+      
       const notification = {
-        id: metadata.Bgblnummer,
-        title: metadata.Bgblnummer,
-        description: metadata.Titel,
-        publicationDate: metadata.Ausgabedatum,
+        id: metadata.id || metadata.Bgblnummer,
+        title: isStateNotification ? metadata.title || metadata.id : metadata.Bgblnummer,
+        description: isStateNotification ? metadata.description : metadata.Titel,
+        publicationDate: isStateNotification ? metadata.publicationDate : metadata.Ausgabedatum,
         isRead: false,
         articles: [],
         changes: [],
-        category: "Bundesrecht",
-        jurisdiction: "BR"
+        category: isStateNotification ? "Landesrecht" : "Bundesrecht",
+        jurisdiction: isStateNotification ? "LR" : "BR"
       };
+      
+      // Add bundesland if it exists
+      if (metadata.bundesland) {
+        notification.bundesland = metadata.bundesland;
+      }
 
       // Get the main content section
       const abschnitt = xmlData['risdok'] &&
@@ -118,31 +127,38 @@ class BgblXmlParser {
                         xmlData['risdok']['nutzdaten']['abschnitt'];
       
       if (!abschnitt) {
-        console.error(`[${metadata.Bgblnummer}] No abschnitt found in XML`);
+        console.error(`[${notification.id}] No abschnitt found in XML`);
         return notification;
       }
 
       // Extract articles (titles and subtitles) if they exist
       if (abschnitt.ueberschrift) {
-      this.extractArticles(abschnitt, notification);
+        this.extractArticles(abschnitt, notification);
       }
       
       // Extract all changes
       this.extractChanges(xmlData, notification);
 
+      // Log for debugging
+      console.log(`Extracted ${notification.articles.length} articles and ${notification.changes.length} changes for ${notification.id}`);
+
       return notification;
     } catch (error) {
-      console.error(`[${metadata.Bgblnummer}] Error parsing XML: ${error.message}`);
+      console.error(`[${metadata.id || metadata.Bgblnummer}] Error parsing XML: ${error.message}`);
+      
+      // Create error notification with appropriate metadata
+      const isStateNotification = metadata.id?.includes('LGBl.') || metadata.bundesland;
+      
       return {
-        id: metadata.Bgblnummer,
-        title: `${metadata.Bgblnummer} (Parse Error)`,
+        id: metadata.id || metadata.Bgblnummer,
+        title: `${isStateNotification ? metadata.id : metadata.Bgblnummer} (Parse Error)`,
         description: `Error parsing XML: ${error.message}`,
-        publicationDate: metadata.Ausgabedatum,
+        publicationDate: isStateNotification ? metadata.publicationDate : metadata.Ausgabedatum,
         isRead: false,
         articles: [],
         changes: [],
-        category: "Bundesrecht",
-        jurisdiction: "BR",
+        category: isStateNotification ? "Landesrecht" : "Bundesrecht",
+        jurisdiction: isStateNotification ? "LR" : "BR",
         error: true
       };
     }

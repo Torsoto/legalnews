@@ -26,19 +26,19 @@ const formatDate = (dateString) => {
 
 const ChangeItem = ({ change }) => {
   const [expanded, setExpanded] = useState(false);
-  
+
   return (
     <View className="mb-4 pb-4 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
       <View className="mb-2">
         <Text className="text-gray-900 font-medium mb-2">{change.title}</Text>
-        
+
         {change.change && change.change.trim() !== "" && (
           <TouchableOpacity
             onPress={() => setExpanded(!expanded)}
             activeOpacity={0.7}
           >
             <View className="bg-gray-100 px-3 py-2 rounded border-l-4 border-primary mt-2">
-              <Text 
+              <Text
                 className="text-gray-800"
                 numberOfLines={expanded ? undefined : 3}
               >
@@ -68,35 +68,31 @@ const ArticleSection = ({ article, changes }) => {
         activeOpacity={0.7}
       >
         <View className="flex-1 pr-3">
-          <Text className="font-bold text-gray-800">
-            {article.title}
-          </Text>
+          <Text className="font-bold text-gray-800">{article.title}</Text>
           {article.subtitle && !expanded && (
             <Text className="text-gray-600 mt-1" numberOfLines={1}>
               {article.subtitle}
             </Text>
           )}
         </View>
-        <Ionicons 
-          name={expanded ? 'chevron-up' : 'chevron-down'} 
-          size={20} 
-          color="#666" 
+        <Ionicons
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color="#666"
         />
       </TouchableOpacity>
 
       {expanded && (
         <View className="p-4 bg-gray-50 border-t border-gray-200">
           {article.subtitle && (
-            <Text className="text-gray-800 mb-4">
-              {article.subtitle}
-            </Text>
+            <Text className="text-gray-800 mb-4">{article.subtitle}</Text>
           )}
-          
+
           {/* Show changes for this article */}
           {changes && changes.length > 0 ? (
             <View>
               <Text className="font-bold text-gray-800 mb-3">Änderungen:</Text>
-              {changes.map(change => (
+              {changes.map((change) => (
                 <ChangeItem key={change.id} change={change} />
               ))}
             </View>
@@ -127,7 +123,7 @@ const NewsDetailScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     checkIfBookmarked();
-    
+
     // Group changes by article
     if (newsItem.articles && newsItem.articles.length > 0 && newsItem.changes) {
       groupChangesByArticle();
@@ -142,32 +138,32 @@ const NewsDetailScreen = ({ route, navigation }) => {
     const changeGroups = [];
     let currentGroup = [];
     let currentArticleIndex = 0;
-    
+
     // Iterate through changes and group them
-    newsItem.changes.forEach(change => {
+    newsItem.changes.forEach((change) => {
       // If we find a change starting with "1.", it's the beginning of a new article's changes
       if (change.title.trim().startsWith("1.") && currentGroup.length > 0) {
         changeGroups.push([...currentGroup]);
         currentGroup = [];
         currentArticleIndex++;
       }
-      
+
       // Add the change to current group if not exceeding article count
       if (currentArticleIndex < articleCount) {
         currentGroup.push(change);
       }
     });
-    
+
     // Add the last group if not empty
     if (currentGroup.length > 0 && currentArticleIndex < articleCount) {
       changeGroups.push(currentGroup);
     }
-    
+
     // Fill remaining articles with empty arrays if needed
     while (changeGroups.length < articleCount) {
       changeGroups.push([]);
     }
-    
+
     setArticleChanges(changeGroups);
   };
 
@@ -196,7 +192,11 @@ const NewsDetailScreen = ({ route, navigation }) => {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `${newsItem.title} - ${newsItem.description || ''}\n\nÄnderungen in der Gesetzgebung vom ${formatDate(newsItem.publicationDate)}`,
+        message: `${newsItem.title} - ${
+          newsItem.description || ""
+        }\n\nÄnderungen in der Gesetzgebung vom ${formatDate(
+          newsItem.publicationDate
+        )}`,
       });
     } catch (error) {
       console.error("Error sharing:", error);
@@ -228,11 +228,16 @@ const NewsDetailScreen = ({ route, navigation }) => {
             <Ionicons name="arrow-back" size={22} color="#2196F3" />
             <Text className="text-primary ml-1 text-sm">Zurück</Text>
           </TouchableOpacity>
-          
-          <Text className="flex-1 text-center text-lg font-semibold text-gray-800" numberOfLines={1}>
-            {newsItem.title.length > 25 ? newsItem.title.substring(0, 25) + '...' : newsItem.title}
+
+          <Text
+            className="flex-1 text-center text-lg font-semibold text-gray-800"
+            numberOfLines={1}
+          >
+            {newsItem.title.length > 25
+              ? newsItem.title.substring(0, 25) + "..."
+              : newsItem.title}
           </Text>
-          
+
           <View className="flex-row items-center">
             <Animated.View style={{ transform: [{ scale: scaleAnimation }] }}>
               <TouchableOpacity
@@ -242,12 +247,12 @@ const NewsDetailScreen = ({ route, navigation }) => {
               >
                 <Ionicons
                   name={isBookmarked ? "bookmark" : "bookmark-outline"}
-                  size={22} 
+                  size={22}
                   color={isBookmarked ? "#4CAF50" : "#666"}
                 />
               </TouchableOpacity>
             </Animated.View>
-            
+
             <TouchableOpacity
               onPress={handleShare}
               className="p-1"
@@ -265,7 +270,7 @@ const NewsDetailScreen = ({ route, navigation }) => {
           <Text className="text-2xl font-bold text-gray-800 mb-3">
             {newsItem.title}
           </Text>
-          
+
           <View className="flex-row flex-wrap mb-3">
             {newsItem.category && (
               <View className="bg-blue-50 px-3 py-1 rounded-full mr-2 mb-1 border border-blue-100">
@@ -277,7 +282,20 @@ const NewsDetailScreen = ({ route, navigation }) => {
             {newsItem.jurisdiction && (
               <View className="bg-green-50 px-3 py-1 rounded-full mr-2 mb-1 border border-green-100">
                 <Text className="text-xs text-green-700 font-medium">
-                  {newsItem.jurisdiction}
+                  {newsItem.jurisdiction === "BR"
+                    ? "Bundesrecht"
+                    : newsItem.jurisdiction === "LR"
+                    ? "Landesrecht"
+                    : newsItem.jurisdiction === "EU"
+                    ? "EU-Recht"
+                    : newsItem.jurisdiction}
+                </Text>
+              </View>
+            )}
+            {newsItem.jurisdiction === "LR" && newsItem.bundesland && (
+              <View className="bg-purple-50 px-3 py-1 rounded-full mr-2 mb-1 border border-purple-100">
+                <Text className="text-xs text-purple-700 font-medium">
+                  {newsItem.bundesland}
                 </Text>
               </View>
             )}
@@ -287,66 +305,114 @@ const NewsDetailScreen = ({ route, navigation }) => {
               </Text>
             </View>
           </View>
-          
-          <Text className="text-gray-600 mb-4">
-            {newsItem.description}
-          </Text>
-          
+
+          <Text className="text-gray-600 mb-4">{newsItem.description}</Text>
+
           {newsItem.documentUrl && (
             <TouchableOpacity
               onPress={handleOpenOriginalDocument}
               className="flex-row items-center"
             >
-              <Ionicons name="document-text-outline" size={16} color="#2196F3" />
+              <Ionicons
+                name="document-text-outline"
+                size={16}
+                color="#2196F3"
+              />
               <Text className="text-primary ml-1 underline">
                 Originaldokument anzeigen
               </Text>
             </TouchableOpacity>
           )}
         </View>
-        
+
         {/* AI Summary if available */}
         {newsItem.aiSummary && (
           <View className="p-4 border-b border-gray-200">
             <View className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <View className="flex-row items-center mb-2">
                 <Ionicons name="sparkles" size={18} color="#2196F3" />
-                <Text className="text-blue-700 font-bold ml-1">KI-Zusammenfassung</Text>
+                <Text className="text-blue-700 font-bold ml-1">
+                  KI-Zusammenfassung
+                </Text>
               </View>
-              <Text className="text-gray-700">
-                {newsItem.aiSummary}
-              </Text>
+              <Text className="text-gray-700">{newsItem.aiSummary}</Text>
             </View>
           </View>
         )}
-        
+
+        {/* Consolidated Version Links Section */}
+        {newsItem.affectedLaws && newsItem.affectedLaws.length > 0 && (
+          <View className="p-4 border-b border-gray-200">
+            <View className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <View className="flex-row items-center mb-3">
+                <Ionicons name="link" size={18} color="#2196F3" />
+                <Text className="text-blue-700 font-bold ml-1">
+                  Konsolidierte Fassungen
+                </Text>
+              </View>
+
+              {newsItem.affectedLaws.map((law, index) => (
+                <View key={index} className="mb-3 last:mb-0">
+                  <Text className="text-gray-800 font-medium mb-1">
+                    {law.title}
+                  </Text>
+
+                  {law.consolidatedVersionUrl ? (
+                    <TouchableOpacity
+                      onPress={() =>
+                        Linking.openURL(law.consolidatedVersionUrl)
+                      }
+                      className="flex-row items-center"
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="document-text-outline"
+                        size={16}
+                        color="#2196F3"
+                      />
+                      <Text className="text-primary ml-1 underline">
+                        Konsolidierte Fassung anzeigen
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text className="text-gray-500 italic">
+                      Keine konsolidierte Fassung verfügbar
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Articles with their changes */}
         {newsItem.articles && newsItem.articles.length > 0 && (
           <View className="p-4">
             {newsItem.articles.map((article, index) => (
-              <ArticleSection 
-                key={article.id} 
+              <ArticleSection
+                key={article.id}
                 article={article}
                 changes={articleChanges[index] || []}
               />
             ))}
           </View>
         )}
-        
+
         {/* Standalone changes when no articles are present */}
-        {(!newsItem.articles || newsItem.articles.length === 0) && ungroupedChanges.length > 0 && (
-          <View className="p-4">
-            <Text className="text-lg font-bold text-gray-800 mb-3">
-              Änderungen
-            </Text>
-            {ungroupedChanges.map((change) => (
-              <ChangeItem key={change.id} change={change} />
-            ))}
-          </View>
-        )}
+        {(!newsItem.articles || newsItem.articles.length === 0) &&
+          ungroupedChanges.length > 0 && (
+            <View className="p-4">
+              <Text className="text-lg font-bold text-gray-800 mb-3">
+                Änderungen
+              </Text>
+              {ungroupedChanges.map((change) => (
+                <ChangeItem key={change.id} change={change} />
+              ))}
+            </View>
+          )}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default NewsDetailScreen; 
+export default NewsDetailScreen;
