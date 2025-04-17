@@ -1,11 +1,11 @@
-import { PORT } from "@env";
+import { PORT, IP } from "@env";
 
 /**
  * API URLs and settings
  */
 export const API = {
   // Base URL for the backend API
-  BASE_URL: `http://192.168.0.128:${PORT}/api`,
+  BASE_URL: `http://${IP}:${PORT}/api`,
 
   // Endpoints
   ENDPOINTS: {
