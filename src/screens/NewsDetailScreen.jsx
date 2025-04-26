@@ -273,11 +273,15 @@ const NewsDetailScreen = ({ route, navigation }) => {
 
           <View className="flex-row flex-wrap mb-3">
             {newsItem.category && (
-              <View className="bg-blue-50 px-3 py-1 rounded-full mr-2 mb-1 border border-blue-100">
-                <Text className="text-xs text-blue-700 font-medium">
-                  {newsItem.category}
-                </Text>
-              </View>
+              <>
+                {newsItem.category.split(', ').map((category, index) => (
+                  <View key={index} className="bg-blue-50 px-3 py-1 rounded-full mr-2 mb-1 border border-blue-100">
+                    <Text className="text-xs text-blue-700 font-medium">
+                      {category}
+                    </Text>
+                  </View>
+                ))}
+              </>
             )}
             {newsItem.jurisdiction && (
               <View className="bg-green-50 px-3 py-1 rounded-full mr-2 mb-1 border border-green-100">

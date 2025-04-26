@@ -14,6 +14,7 @@ import * as bookmarkStorage from "../utils/bookmarkStorage";
 import * as notificationStorage from "../utils/notificationStorage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { get } from "../utils/apiClient"; 
+import { auth } from "../../config/firebase"; // Für den Zugriff auf den aktuellen Benutzer
 
 // Import components
 import EmptyNewsState from "../components/LegalNewsScreen/EmptyNewsState";
@@ -41,12 +42,15 @@ const LegalNewsScreen = ({ navigation }) => {
   const [sortAscending, setSortAscending] = useState(false); // false = newest first (descending)
   const [deletedNotifications, setDeletedNotifications] = useState({});
   const [readNotifications, setReadNotifications] = useState({});
+  const [userSubscriptions, setUserSubscriptions] = useState([]);
+  const [showOnlySubscribed, setShowOnlySubscribed] = useState(false);
 
-  // Load bookmarks, notifications and news on mount
+  // Load bookmarks, notifications, subscriptions and news on mount
   useEffect(() => {
     const loadData = async () => {
       await loadBookmarks();
       await loadNotificationStatus();
+      await fetchUserSubscriptions();
       fetchNews();
     };
     
@@ -56,6 +60,7 @@ const LegalNewsScreen = ({ navigation }) => {
     const unsubscribe = navigation.addListener('focus', async () => {
       await loadBookmarks();
       await loadNotificationStatus();
+      await fetchUserSubscriptions();
     });
 
     return unsubscribe;
@@ -67,7 +72,18 @@ const LegalNewsScreen = ({ navigation }) => {
       const filtered = applyFilters(allNews);
       setNews(filtered);
     }
-  }, [selectedFilter, searchQuery, searchActive, tabView, sortAscending, bookmarkedNews, deletedNotifications, readNotifications]);
+  }, [
+    selectedFilter, 
+    searchQuery, 
+    searchActive, 
+    tabView, 
+    sortAscending, 
+    bookmarkedNews, 
+    deletedNotifications, 
+    readNotifications,
+    showOnlySubscribed,
+    userSubscriptions
+  ]);
 
   // Count unread notifications
   useEffect(() => {
@@ -221,6 +237,25 @@ const LegalNewsScreen = ({ navigation }) => {
     setReadNotifications(newReadState);
   };
 
+  // Laden der Abonnements des Benutzers
+  const fetchUserSubscriptions = async () => {
+    if (!auth.currentUser) return;
+    
+    try {
+      const data = await get(`/user/subscriptions/${auth.currentUser.uid}`);
+      
+      if (data.success && data.subscriptions) {
+        setUserSubscriptions(data.subscriptions);
+      }
+    } catch (error) {
+      console.error('Error fetching user subscriptions:', error);
+    }
+  };
+
+  const toggleOnlySubscribed = () => {
+    setShowOnlySubscribed(prev => !prev);
+  };
+
   // Apply all active filters to the news array and sort
   const applyFilters = (newsArray) => {
     // Start with notifications filter
@@ -247,6 +282,40 @@ const LegalNewsScreen = ({ navigation }) => {
       );
     }
     
+    // Filter nach abonnierten Rechtsgebieten
+    if (showOnlySubscribed && userSubscriptions.length > 0) {
+      filteredNews = filteredNews.filter(item => {
+        // Prüfe, ob die Nachricht ein abonniertes Rechtsgebiet hat
+        if (!item.category) return false;
+        
+        // Kategorien aus dem Nachrichtenobjekt extrahieren
+        const categories = item.category.split(', ');
+        
+        // Für jede Kategorie prüfen, ob sie abonniert ist
+        return categories.some(category => {
+          // Finde das passende Abonnement
+          const subscription = userSubscriptions.find(sub => 
+            sub.category === category
+          );
+          
+          // Prüfe die Zuständigkeit (Bundesrecht, Landesrecht, etc.)
+          if (subscription && item.jurisdiction) {
+            if (item.jurisdiction === 'BR' && subscription.types?.BR) {
+              return true;
+            }
+            if (item.jurisdiction === 'LR' && subscription.types?.LR) {
+              return true;
+            }
+            if (item.jurisdiction === 'EU' && subscription.types?.EU) {
+              return true;
+            }
+          }
+          
+          return false;
+        });
+      });
+    }
+    
     // Apply category/jurisdiction filter if selected
     if (selectedFilter) {
       if (selectedFilter === 'Bundesrecht') {
@@ -257,7 +326,12 @@ const LegalNewsScreen = ({ navigation }) => {
         // Filter only bookmarked news
         filteredNews = filteredNews.filter(item => bookmarkedNews[item.id]);
       } else {
-        filteredNews = filteredNews.filter(item => item.category === selectedFilter);
+        // Hier muss die Mehrfachkategorienfilterung berücksichtigt werden
+        filteredNews = filteredNews.filter(item => {
+          if (!item.category) return false;
+          const categories = item.category.split(', ');
+          return categories.includes(selectedFilter);
+        });
       }
     }
     
@@ -329,6 +403,8 @@ const LegalNewsScreen = ({ navigation }) => {
           searchActive={searchActive}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          showOnlySubscribed={showOnlySubscribed}
+          toggleOnlySubscribed={toggleOnlySubscribed}
         />
         
         {/* Tab selector */}

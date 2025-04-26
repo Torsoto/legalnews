@@ -50,7 +50,7 @@ const JurisdictionSelectionStep = ({
         </View>
 
         <Text className="text-md font-semibold mb-4">
-          Wählen Sie Ihre Rechtsgebiete:
+          Wählen Sie Ihre Gesetzgebungs-Ebene:
         </Text>
 
         <View className="space-y-4">

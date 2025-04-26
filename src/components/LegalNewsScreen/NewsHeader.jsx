@@ -12,7 +12,9 @@ const NewsHeader = ({
   toggleSearch,
   searchActive,
   searchQuery,
-  setSearchQuery 
+  setSearchQuery,
+  showOnlySubscribed,
+  toggleOnlySubscribed
 }) => {
   const renderSearchBar = () => (
     <View className="px-3 pb-2">
@@ -31,6 +33,19 @@ const NewsHeader = ({
           </TouchableOpacity>
         ) : null}
       </View>
+      
+      {/* Checkbox für abonnierte Rechtsgebiete */}
+      <TouchableOpacity 
+        className="flex-row items-center mt-2 ml-1"
+        onPress={toggleOnlySubscribed}
+      >
+        <Ionicons 
+          name={showOnlySubscribed ? "checkbox" : "square-outline"} 
+          size={20} 
+          color={showOnlySubscribed ? "#2196F3" : "#666"} 
+        />
+        <Text className="ml-2 text-gray-700 text-sm">Nur abonnierte Rechtsgebiete anzeigen</Text>
+      </TouchableOpacity>
     </View>
   );
   

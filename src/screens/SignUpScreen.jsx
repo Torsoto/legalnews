@@ -13,16 +13,24 @@ import {
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import LegalFooter from '../components/LegalFooter';
+import PrivacyConsent from '../components/PrivacyConsent';
 
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
       Alert.alert('Fehler', 'Die Passwörter stimmen nicht überein');
+      return;
+    }
+
+    if (!privacyConsent) {
+      Alert.alert('Fehler', 'Bitte stimmen Sie unserer Datenschutzerklärung zu');
       return;
     }
 
@@ -86,6 +94,11 @@ const SignUpScreen = ({ navigation }) => {
               />
             </View>
 
+            <PrivacyConsent
+              isChecked={privacyConsent}
+              onToggle={() => setPrivacyConsent(!privacyConsent)}
+            />
+
             <TouchableOpacity 
               className="bg-primary p-4 rounded-xl items-center mt-4 shadow-md"
               onPress={handleSignUp}
@@ -102,6 +115,8 @@ const SignUpScreen = ({ navigation }) => {
                 <Text className="text-primary font-bold">Anmelden</Text>
               </TouchableOpacity>
             </View>
+            
+            <LegalFooter />
           </View>
         </View>
       </KeyboardAvoidingView>

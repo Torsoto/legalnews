@@ -16,6 +16,8 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import EffectiveDatesScreen from "./src/screens/EffectiveDatesScreen";
 import LegalNewsScreen from "./src/screens/LegalNewsScreen";
 import NewsDetailScreen from "./src/screens/NewsDetailScreen";
+import ImpressumScreen from "./src/screens/ImpressumScreen";
+import DatenschutzScreen from "./src/screens/DatenschutzScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -111,6 +113,20 @@ export default function App() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen
+              name="Impressum"
+              component={ImpressumScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="Datenschutz"
+              component={DatenschutzScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
           </>
         ) : (
           <>
@@ -122,6 +138,16 @@ export default function App() {
             <Stack.Screen
               name="Registrieren"
               component={SignUpScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Impressum"
+              component={ImpressumScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Datenschutz"
+              component={DatenschutzScreen}
               options={{ headerShown: false }}
             />
           </>

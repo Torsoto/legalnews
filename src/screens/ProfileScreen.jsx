@@ -20,7 +20,8 @@ import { updateProfile, signOut } from 'firebase/auth';
 import { clearAuth } from "../utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { API } from '../constants/api';
-import { get, del } from '../utils/apiClient'; // Import the authenticated API client
+import { get, del } from '../utils/apiClient'; 
+import LegalFooter from '../components/LegalFooter';
 
 const ProfileScreen = ({ navigation }) => {
   const [displayName, setDisplayName] = useState('');
@@ -187,7 +188,7 @@ const ProfileScreen = ({ navigation }) => {
           <Text className="text-2xl font-bold text-gray-800">Profil</Text>
           {!isEditing && (
             <TouchableOpacity onPress={() => setIsEditing(true)}>
-              <Ionicons name="pencil" size={22} color="#4F46E5" />
+              <Ionicons name="pencil" size={22} color="#1a73e8" />
             </TouchableOpacity>
           )}
         </View>
@@ -249,7 +250,7 @@ const ProfileScreen = ({ navigation }) => {
                 }}
                 disabled={loading}
               >
-                <Text className="text-gray-800 font-bold">Abbrechen</Text>
+                <Text className="text-gray-700 font-medium">Abbrechen</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 className="flex-1 bg-primary p-4 rounded-xl items-center"
@@ -257,26 +258,32 @@ const ProfileScreen = ({ navigation }) => {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="white" />
+                  <ActivityIndicator color="#ffffff" size="small" />
                 ) : (
-                  <Text className="text-white font-bold">Speichern</Text>
+                  <Text className="text-white font-medium">Speichern</Text>
                 )}
               </TouchableOpacity>
             </View>
           ) : null}
+
+          {/* Legal Links */}
+          <View className="mb-5 bg-white rounded-2xl shadow-sm p-6">
+            <Text className="text-lg font-semibold text-gray-800 mb-3">Rechtliche Informationen</Text>
+            <LegalFooter />
+          </View>
 
           {/* Subscriptions Section */}
           <View className="mb-6">
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold text-gray-800">Meine Abonnements</Text>
               <TouchableOpacity onPress={fetchUserSubscriptions}>
-                <Ionicons name="refresh" size={20} color="#4F46E5" />
+                <Ionicons name="refresh" size={20} color="#1a73e8" />
               </TouchableOpacity>
             </View>
             
             {loadingSubscriptions ? (
               <View className="py-8 items-center">
-                <ActivityIndicator size="large" color="#4F46E5" />
+                <ActivityIndicator size="large" color="#1a73e8" />
                 <Text className="text-gray-500 mt-2">Lade Abonnements...</Text>
               </View>
             ) : subscriptions.length > 0 ? (
@@ -304,11 +311,10 @@ const ProfileScreen = ({ navigation }) => {
             
           {/* Logout Button */}
           <TouchableOpacity
-            className="bg-red-500 p-4 rounded-xl items-center flex-row justify-center mt-auto mb-6"
+            className="bg-red-500 p-4 rounded-xl items-center mb-10"
             onPress={handleLogout}
           >
-            <Ionicons name="log-out-outline" size={20} color="white" />
-            <Text className="text-white font-bold ml-2">Abmelden</Text>
+            <Text className="text-white font-medium">Abmelden</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

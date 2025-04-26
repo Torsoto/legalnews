@@ -14,6 +14,7 @@ import {
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { persistAuth } from '../utils/auth';
+import LegalFooter from '../components/LegalFooter';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -96,6 +97,8 @@ const LoginScreen = ({ navigation }) => {
                 <Text className="text-primary font-bold">Registrieren</Text>
               </TouchableOpacity>
             </View>
+            
+            <LegalFooter />
           </View>
         </View>
       </KeyboardAvoidingView>
