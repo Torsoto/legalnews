@@ -28,7 +28,7 @@ const BundeslaenderSelectionStep = ({
       <ScrollView className="flex-1 px-4">
         <View className="mb-6">
           <Text className="text-md font-semibold mb-4">
-            Ausgewählte Rechtsgebiete:
+            Ausgewählte Gesetzgebungs-Ebenen:
           </Text>
           <View className="flex-row flex-wrap">
             {selectedJurisdictions.map((jId) => {

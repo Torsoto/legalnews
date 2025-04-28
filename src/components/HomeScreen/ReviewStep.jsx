@@ -66,7 +66,7 @@ const ReviewStep = ({
               <View className="w-8 h-8 rounded-full bg-primary items-center justify-center mr-2">
                 <Ionicons name="globe-outline" size={18} color="white" />
               </View>
-              <Text className="text-lg font-semibold">Rechtsgebiete</Text>
+              <Text className="text-lg font-semibold">Gesetzgebungs-Ebenen</Text>
             </View>
             {selectedJurisdictionItems.map((jurisdiction) => (
               <View key={jurisdiction} className="ml-10 mb-1 flex-row items-center">

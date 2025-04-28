@@ -18,10 +18,10 @@ const JurisdictionSelectionStep = ({
     <Animated.View style={{ opacity: fadeAnim }} className="flex-1">
       <View className="px-4 py-3 bg-gray-50 rounded-lg mb-4">
         <Text className="text-center text-lg font-bold mb-2">
-          Schritt 2: Wählen Sie Rechtsgebiete
+          Schritt 2: Wählen Sie Gesetzgebungs-Ebenen
         </Text>
         <Text className="text-center text-gray-600 mb-2">
-          Wählen Sie die Rechtsgebiete, die für Sie relevant sind
+          Wählen Sie die Gesetzgebungs-Ebenen, die für Sie relevant sind
         </Text>
         <StepIndicator currentStep={currentStep} selectedJurisdictions={selectedJurisdictions} />
       </View>

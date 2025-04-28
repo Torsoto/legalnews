@@ -56,7 +56,7 @@ export const legalCategories = [
     title: "Wirtschaftsprivatrecht",
     description: "Updates zum Wirtschaftsprivatrecht",
     longDescription:
-      "Das Wirtschaftsprivatrecht umfasst die rechtlichen Regelungen für wirtschaftliche Aktivitäten zwischen Privatpersonen und Unternehmen. Es beinhaltet Handelsrecht, Gesellschaftsrecht, Wettbewerbsrecht, Urheberrecht und verwandte Rechtsgebiete.",
+      "Das Wirtschaftsprivatrecht umfasst die rechtlichen Regelungen für wirtschaftliche Aktivitäten zwischen Privatpersonen und Unternehmen. Es beinhaltet Handelsrecht, Gesellschaftsrecht, Wettbewerbsrecht, Urheberrecht und verwandte Rechtsbereiche.",
     compatibleJurisdictions: ["BR", "EU"], // Bundesrecht und EU-Recht
   },
   {
