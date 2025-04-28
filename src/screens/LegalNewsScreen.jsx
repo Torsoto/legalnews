@@ -163,11 +163,18 @@ const LegalNewsScreen = ({ navigation }) => {
 
   const handleBookmarkToggle = async (newsId) => {
     const newStatus = await bookmarkStorage.toggleBookmark(newsId);
-    
-    setBookmarkedNews(prev => ({
-      ...prev,
-      [newsId]: newStatus
-    }));
+  
+    setBookmarkedNews(prev => {
+      if (newStatus) {
+        // Hinzufügen
+        return { ...prev, [newsId]: true };
+      } else {
+        // Entfernen
+        const updated = { ...prev };
+        delete updated[newsId];
+        return updated;
+      }
+    });
   };
 
   const handleDeleteNotification = async (newsId) => {
