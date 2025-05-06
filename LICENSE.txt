@@ -1,0 +1,5 @@
+Copyright © 2025 Tolga Topal & Yusuf Yürekli
+
+This software is proprietary and confidential. Unauthorized use, reproduction, modification, or distribution of this code, in whole or in part, is strictly prohibited without prior written consent from the authors.
+
+This project may be viewed for reference purposes only.
