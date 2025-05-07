@@ -70,4 +70,4 @@ npm run dev
 
 ## 📜 License
 
-MIT
+This project is proprietary and not licensed for public use. All rights reserved. You may view the source code, but copying, modification, or distribution is not permitted without explicit written permission from the authors.
